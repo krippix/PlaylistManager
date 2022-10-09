@@ -3,66 +3,33 @@ import spotipy
 # python native
 import logging
 # project
-from util import config, database
+import util.database, util.config
 import objects.artist, objects.track
-import fetch
+import spotify_api
 
 def main():
     ''''''
+    logging.basicConfig(encoding='utf-8', level=logging.ERROR)
     # prepare project configuration
-    settings = config.Config()
+    settings = util.config.Config()
+    settings.checkConfig()
 
     # Database init
-    db_con = database.Database(settings)
+    db_con = util.database.Database()
+    db_con.ensure_default_tables()
     
-    # fetch credentials from config.ini
-    missing_credentials = False
-    client_id = settings.get_config("AUTH","client_id")
-    client_secret = settings.get_config("AUTH","client_secret")
+    # spotify api connection
+    spotify = spotify_api.Spotify_api().get_connection()
     
-    if len(client_id) == 0:
-        logging.critical("No client id has been provided, please add one to data/config.ini")
-        missing_credentials = True
-    if len(client_secret) == 0:
-        logging.critical("No client secret has been provided, please add one to data/config.ini")
-        missing_credentials = True
-    
-    if missing_credentials:
-        logging.info("Exiting software.")
-        exit()
-    
-    # Authorize Application and user with Spotify
-    scopes = [
-        "user-library-read",
-        "user-library-modify",
-        "playlist-read-private",
-        "playlist-modify-private",
-        "playlist-read-collaborative",
-        "playlist-modify-public"
-    ]
-    auth_manager = spotipy.oauth2.SpotifyOAuth(
-        scope=scopes,
-        client_id=client_id,
-        client_secret=client_secret,
-        #open_browser=False,
-        #show_dialog=True,
-        redirect_uri="http://172.0.0.1:9090"
-    )
-    
-    # Get Auth URL where user has to login and confirm
-    #auth_manager.
-    #print(auth_manager.get_authorize_url())
 
-    # connect to spotify
-    connection = spotipy.Spotify(auth_manager=auth_manager)
 
     # Test Print user tracks
-    #print(connection.current_user())
+    #print(spotify.current_user())
     #print(connection.user())
     
-    list = fetch.fetch_playlists(connection)
+    #list = fetch.fetch_playlists(connection)
 
-    db_con.add_artist(objects.artist.Artist("1337420lel", "MC ARSCHWASSEr"))
+    #db_con.add_artist(objects.artist.Artist("1337420lel", "MC ARSCHWASSEr"))
 
 if __name__ == "__main__":
     main()

@@ -1,11 +1,11 @@
-import logging
-import os
-import configparser
-import pathlib
+# external
+# python native
+import logging,os,configparser,pathlib
+# project
 
 class Config:
     '''
-    WARINING: Project specific changes are to be made in the marked area.
+    WARINING: Project specific changes are to be made in the marked area (CUSTOM SECTION below).
     The following things are handled by this class:
     - Generation of required folders
     - Generation of config.ini
@@ -17,47 +17,24 @@ class Config:
     INI_FILE: pathlib.Path()
     DB_FILE: pathlib.Path()
     config: configparser.ConfigParser()
+    _instance = None
     
-    ########################
-    # Project specific Part
-    ########################
-
-    def custom_files(self):
-        '''This is where you can add custom locations that should be handled by the class.'''
-        self.folders["data"] = os.path.join(self.folders["root"], "data")
-        #self.folders["sounds"] = os.path.join(self.folders["data"], "sounds")
-        #self.folders["sounds_default"] = os.path.join(self.folders["sounds"], "default") # Hardcoded folders, cannot be played with /play command
-        #self.folders["sounds_custom"] = os.path.join(self.folders["sounds"], "custom")
-        self.INI_FILE = os.path.join(self.folders["data"], "config.ini")
-        self.DB_FILE = os.path.join(self.folders["data"], "database.db")
-
-        
-    def custom_default_config(self):
-        '''Here you can define the .ini file you want generated'''
-        defaultconfig = configparser.ConfigParser()
-
-        defaultconfig['AUTH'] = {
-            "client_id" : "",
-            "client_secret" : ""
-        }
-
-        defaultconfig['SCRIPT'] = {
-            "loglevel" : "info"
-        }
-
-        return defaultconfig
-    
-    ########################
-    # End Project specific Part
-    ########################
+    def __new__(cls):
+        # Turns this class into a singleton
+        if cls._instance is None:
+            cls._instance = super(Config, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
 
 
     def __init__(self):
-        self.folders["root"] = pathlib.Path(__file__).parent.parent.parent
-        self.config = configparser.ConfigParser()
-        self.custom_files()
-        self.ensureBaseFolders()
-        self.checkConfig()
+        '''Init, but only executed once'''
+        if not self._initialized:
+            self.folders["root"] = pathlib.Path(__file__).parent.parent.parent
+            self.config = configparser.ConfigParser()
+            self.custom_files()
+            self.ensureBaseFolders()
+            self._initialized = True
     
 
     def generateConfig(self):
@@ -119,7 +96,6 @@ class Config:
         '''Creates all folders listed '''
         for folder in self.folders.values():
             self.ensureFolder(folder)
-
 
 
     @staticmethod
@@ -191,3 +167,32 @@ class Config:
         ''''Sets config option.'''
         self.config[category][key] = value
         self.writeConfig()
+
+    ########################
+    # CUSTOM SECTION
+    ########################
+
+    def custom_files(self):
+        '''This is where you can add custom locations that should be handled by the class.'''
+        self.folders["data"] = os.path.join(self.folders["root"], "data")
+        #self.folders["sounds"] = os.path.join(self.folders["data"], "sounds")
+        #self.folders["sounds_default"] = os.path.join(self.folders["sounds"], "default") # Hardcoded folders, cannot be played with /play command
+        #self.folders["sounds_custom"] = os.path.join(self.folders["sounds"], "custom")
+        self.INI_FILE = os.path.join(self.folders["data"], "config.ini")
+        self.DB_FILE = os.path.join(self.folders["data"], "database.db")
+
+        
+    def custom_default_config(self):
+        '''Here you can define the .ini file you want generated'''
+        defaultconfig = configparser.ConfigParser()
+
+        defaultconfig['AUTH'] = {
+            "client_id" : "",
+            "client_secret" : ""
+        }
+
+        defaultconfig['SCRIPT'] = {
+            "loglevel" : "info"
+        }
+
+        return defaultconfig
