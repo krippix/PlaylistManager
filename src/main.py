@@ -1,8 +1,11 @@
-import logging
-from util import config
-import util.database as database
-import download
+# external
 import spotipy
+# python native
+import logging
+# project
+from util import config, database
+import objects.artist, objects.track
+import fetch
 
 def main():
     ''''''
@@ -57,10 +60,9 @@ def main():
     #print(connection.current_user())
     #print(connection.user())
     
-    list = download.fetch_library(connection)
-    print(list[0])
-    
-    
+    list = fetch.fetch_playlists(connection)
+
+    db_con.add_artist(objects.artist.Artist("1337420lel", "MC ARSCHWASSEr"))
 
 if __name__ == "__main__":
     main()
