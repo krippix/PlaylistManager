@@ -22,8 +22,19 @@ class Gustelify:
 
     def add_track(self, track: objects.track.Track):
         '''Adds track to local db.'''
-    
-    
+        db_track = self.database.get_track(track.get_id())
+        if db_track is None or track != db_track or db_track.is_expired():
+            self.database.add_track(self.spotify.fetch_track(track))
+            
+
+    def add_library(self):
+        '''Adds users library to the database'''
+        library = self.spotify.fetch_library()
+
+        for track in library:
+            self.add_track(track)
+
+
     ##########
     # update
 
@@ -40,24 +51,16 @@ class Gustelify:
         '''Updates database with songs in user's library and RELEVANT playlists.'''
 
     
-    def update_track(self, track: objects.track.Track):
-        '''Updates db entry of given track and updates provided object.'''
+    def update_database_artists(self):
+        '''Searches database for outdated artists.'''
+        self.database.get_artist()
 
-        timestamp = int(time.time())
+    
+    def update_tracks(self):
+        '''Updates all track entries in database.'''
 
-        # Get existing track from database
-        db_result = self.database.get_track(track.get_id())
-
-        # if track doesent exist yet, create it properly
-        if len(db_result) == 0:
-            self.add_track(track)
-            return
-
-        if timestamp - track.get_timestamp() > 3600:
-            api_result = self.spotify.get_track(track.get_id())
-            #if db_result == 
-
-
+    def update_library(self):
+        '''Updates users library'''
 
     ##########
     # compare
@@ -65,7 +68,7 @@ class Gustelify:
     def compare_library(self) -> list[tuple[objects.track.Track,objects.track.Track]]:
         '''Compares user library to locally stored library image. Returns list of tuples containing (added,removed) tracks'''
 
-        self.database.get_
+        #self.database.get_
 
 
 

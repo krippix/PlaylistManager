@@ -1,3 +1,11 @@
+# external
+# python native
+import time
+# project
+import util.config
+import objects.track, objects.artist, objects.playlist
+
+
 import objects.artist
 
 class Track:
@@ -6,11 +14,13 @@ class Track:
     name: str
     artists = []
     timestamp: int
+    expires_after: int
     
-    def __init__(self, id: str, name: str, artists: list):
+    def __init__(self, id: str, name: str, artists: list, timestamp: int):
         '''Creates new artist object with the provided data'''
         self.set_id(id)
         self.set_name(name)
+        self.timestamp = timestamp
         
         if artists is not None:
             self.set_artists(artists)
@@ -26,7 +36,7 @@ class Track:
     def __eq__(self, other):
         '''Defines behaviour of == operator'''
 
-        if self.id != other.id:
+        if self.get_id() != other.get_id():
             return False
         if self.name != other.name:
             return False
@@ -62,7 +72,13 @@ class Track:
 
     def get_timestamp(self) -> int:
         return self.timestamp
-    
+
+    def is_expired(self) -> bool:
+        ''''''
+        if int(time.time()) - self.timestamp > util.config.Config().get_config(category="EXPIRY",key="tracks"):
+            return True
+        else:
+            return False
     
     #########
     # setter
