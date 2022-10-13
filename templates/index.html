@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} GustelFlasche Sätsch {% endblock %}</h1>
+    <table>
+        <tr>
+            <th>Nr.</th>
+            <th>Track</th>
+            <th>Artist(s)</th>
+        </tr>
+        {% for track in tracks %}
+        <tr>
+            <td></td>
+            <td>{{ track.get_name() }}</td>
+            <td>{{ track.get_artists()[0] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
