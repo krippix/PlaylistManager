@@ -3,8 +3,9 @@ class Artist:
     id: str
     name: str
     timestamp: int
+    genres: list
     
-    def __init__(self, id, name):
+    def __init__(self, id: str, name: str):
         '''Creates new artist object with the provided data'''
         self.id = id
         self.name = name
@@ -33,3 +34,6 @@ class Artist:
     def set_name(self, name: str):
         '''Sets the playlists name'''
         self.name = name
+
+    def set_genres(self, genres: list):
+        self.genres = genres

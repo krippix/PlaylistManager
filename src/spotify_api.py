@@ -4,7 +4,9 @@ import spotipy
 import logging
 # project
 import util.config
+import objects.track, objects.artist, objects.playlist
 
+# TODO this should be made back into instances (probably)
 class Spotify_api:
     '''Class containing the spotify API connection, singleton.'''
     
@@ -67,3 +69,75 @@ class Spotify_api:
 
     def get_connection(self) -> spotipy.Spotify:
         return self.spotify
+
+    ############
+    # get
+    ############
+
+    def get_track(self, track_id: str):
+        '''Pulls track from spotify api by id.'''
+        result = self.spotify.track(track_id=track_id)
+
+        if result is None:
+            # TODO might need error handling here
+            logging.error("Track not found in spotify db.")
+            return None
+
+        # add artists ids into list
+        artists = []
+        for artist in result["artists"]:
+            artists.append(objects.artist.Artist(id=artist["id"], name=artist["name"]))
+
+        return objects.track.Track(id=track_id, name=result["name"], artists=artists)
+        
+        
+
+    def fetch_library(self) -> list[objects.track.Track]:
+        '''Takes all tracks from users library and returns them as List of song objects'''
+        result_list = []
+
+        # fetch library
+        done = False
+        offset = 0
+
+        # iterate over library
+        while not done:
+            results = self.spotify.current_user_saved_tracks(limit=50,offset=offset)
+
+            if len(results["items"]) < 50:
+                done = True
+            
+            for track in results["items"]:
+                track = track["track"]
+                
+                # put artists into one list
+                artists = []
+                for artist in track["artists"]:
+                    artists.append(objects.artist.Artist(artist["id"],artist["name"]))
+                
+                result_list.append(objects.track.Track(id=track["id"],name=track["name"],artists=artists))
+            offset += 50
+
+        return result_list
+
+    def get_playlists(self):
+        '''Returns a list of the users created playlists.'''
+        result_list = []
+        current_user_id = self.spotify.current_user()["id"]
+
+        # fetch all playlists
+        done = False
+        offset = 0
+
+        # iterate over playlist collection
+        while not done:
+            results = self.spotify.current_user_playlists(limit=50,offset=offset)
+
+            if len(results["items"]) < 50:
+                done = True
+
+            for item in results["items"]:
+                if item["owner"]["id"] == current_user_id:
+                    result_list.append(objects.playlist.Playlist(id=item["id"], name=item["name"], owner_id=current_user_id))
+
+        return result_list
