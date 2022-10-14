@@ -17,4 +17,4 @@ This is an attempt at automatically sorting my Spotify music using the follwing 
 
 ## ToDo
 - [ ] figure out how to work user independent
-- [ ] implement koppeltabellen
+- [ ] implement pairing table usage
