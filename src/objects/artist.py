@@ -1,3 +1,9 @@
+# external
+# python native
+import time
+# project
+import util.config
+
 class Artist:
 
     id: str
@@ -28,6 +34,13 @@ class Artist:
 
     def get_genres(self) -> list:
         return self.genres
+
+    def is_expired(self) -> bool:
+        ''''''
+        if int(time.time()) - self.timestamp > util.config.Config().get_config(category="EXPIRY",key="artists"):
+            return True
+        else:
+            return False
 
     ########
     # setter

@@ -138,7 +138,7 @@ class Database:
 
     def get_library(self, user_id: str) -> list[objects.track.Track]:
         '''Returns song in provided users library'''
-        db_result = self.db_cur.execute("SELECT tracks.id_pkey,tracks.name").fetchall()
+        #db_result = self.db_cur.execute("SELECT tracks.id_pkey,tracks.name").fetchall()
 
     ################
     # modifications
@@ -154,6 +154,8 @@ class Database:
         else:
             self.db_cur.execute("UPDATE artists SET name = ?, timestamp = ? WHERE id_pkey = ?",(artist.get_name(), timestamp, artist.get_id()))
         
+        # TODO handle genres for provided artist
+
         self.db_con.commit()
 
 
@@ -176,8 +178,23 @@ class Database:
             self.db_cur.execute("UPDATE tracks SET name = ?, timestamp = ? WHERE id_pkey = ?", (track.get_name(), timestamp, track.get_id()))
         
         # now ensure all involved artists also exist within the database
+        rebuild_track_artists = False
+        db_result = self.db_cur.execute("SELECT artists_id_fkey FROM tracks_artists WHERE tracks_id_fkey=?",(track.get_id(),)).fetchall()
+        
         for artist in track.get_artists():
             self.add_artist(artist)
+
+            # Check if song has same amount of artists
+            if len(db_result) == len(track.get_artists()):
+                if artist.get_id() not in db_result:
+                    rebuild_track_artists = True
+            else:
+                rebuild_track_artists = True
+
+        if rebuild_track_artists:
+            self.db_cur.execute("DELETE FROM tracks_artists WHERE tracks_id_fkey=?",(track.get_id(),))
+            for artist in track.get_artists():
+                self.db_cur.execute("INSERT INTO tracks_artists (tracks_id_fkey,artists_id_fkey) VALUES (?,?)",(track.get_id(),artist.get_id()))
         self.db_con.commit()
 
         
@@ -187,12 +204,6 @@ class Database:
     def add_playlist(self, playlist: objects.playlist.Playlist):
         '''Adds playlist to the database'''
 
-    def ensure_artists(self, track: objects.track.Track):
-        '''Ensures that artist information of the track is available. Pulls from spotify if data is too old or doesent exist.'''
-        db_con = util.database.Database()
-
-        for artist in track.get_artists:
-            db_con.get_artist(track.get_arti)
 
 if __name__ == "__main__":
     logging.error("This file is not supposed to be executed.")
