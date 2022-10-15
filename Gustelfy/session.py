@@ -1,19 +1,18 @@
 # external
-import spotipy
 # python native
 import logging, time
 # project
-import spotify_api
-import util.database
+import spotify_api, database
+import util.config
 import objects.track
 
-class Gustelify:
-    '''Instance containing all actions a user can take(?)'''
+class Session:
+    '''Entrypoint for any data manipulation. Combines database and spotify API access. This will (probably) represent a user session.'''
     spotify: spotify_api.Spotify_api
-    database: util.database.Database
+    database: database.Database
     user_id: str
 
-    def __init__(self, spotify: spotify_api.Spotify_api, database: util.database.Database):
+    def __init__(self, spotify: spotify_api.Spotify_api, database: database.Database):
         self.spotify = spotify
         self.database = database
 

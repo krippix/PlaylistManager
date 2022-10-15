@@ -105,6 +105,8 @@ class Spotify_api:
 
     def fetch_artist(self, id: str) -> objects.artist.Artist:
         '''Returns one artist based on input id.'''
+        
+
 
     def fetch_library(self) -> list[objects.track.Track]:
         '''Takes all tracks from users library and returns them as List of song objects'''
