@@ -109,7 +109,7 @@ class Spotify_api:
 
 
     def fetch_library(self) -> list[objects.track.Track]:
-        '''Takes all tracks from users library and returns them as List of song objects'''
+        '''Takes all tracks from users library and returns them as List of track objects'''
         result_list = []
 
         # fetch library
