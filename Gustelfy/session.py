@@ -16,19 +16,71 @@ class Session:
         self.logger = logging.getLogger("Gustelfy.session") #TODO include userid here once it's properly instancialized
         self.spotify = spotify
         self.db_con = database
+        self.user_id = self.spotify.get_user_id()
 
     ##########
     # get
 
+    def get_homepage_data(self) -> dict:
+        '''
+        Returns data needed for homepage. 
+        {
+            display_name: <username>,
+            playlists: [(name,isGenrePlaylist),...],
+            changes: ([added],[removed])
+        }
+        # TODO somehow have to recieve the users decisions from the flask server.
+        '''
+        result = {
+            "display_name": self.spotify.get_display_name(),
+            "playlists": self.spotify.fetch_playlists(),
+            "changes": self.get_library_changes()
+        }
+        
+        return result
 
-    
-    
-    
+
+    def get_library_changes(self) -> tuple[list[objects.track.Track],list[objects.track.Track]]:
+        '''Returns tuple of list of changed tracks in library: (added,removed)'''
+
+        local_lib = self.db_con.get_library(self.user_id)
+        online_lib = self.spotify.fetch_library()
+
+        # Creates list of songs that exist in both local and online library
+        overlap = [local_track for local_track in local_lib for online_track in online_lib if local_track.get_id() == online_track.get_id()]
+
+        added = []
+        removed = []
+
+        # Creates lists off added and removed songs
+        for overlap_track in overlap:
+            
+            match_found = False
+            for local_track in local_lib:
+                if local_track.get_id() == overlap_track.get_id():
+                    match_found = True
+                    break
+            if not match_found:
+                removed.append(local_track)
+
+            match_found = False
+            for online_track in online_lib:
+                if online_track.get_id() == overlap_track.get_id():
+                    match_found = True
+                    break
+            if not match_found:
+                added.append(online_track)
+
+        return (added,removed)
+
+
     ##########
     # add / set
 
     def add_track(self, track: objects.track.Track):
-        '''Adds track to local db.'''
+        '''Attempts to add track to local database. Updates if already present and expired.'''
+        
+        # Check if track is already part of the database
         db_track = self.db_con.get_track(track.get_id())
         if db_track is None or track != db_track or db_track.is_expired():
             self.db_con.add_track(self.spotify.fetch_track(track))
@@ -40,8 +92,8 @@ class Session:
                 self.db_con.add_artist(self.spotify.fetch_artist())
             
 
-    def add_library(self):
-        '''Adds users library to the database'''
+    def update_library(self):
+        '''Updates the current user's library in the database.'''
         library = self.spotify.fetch_library()
 
         for track in library:
@@ -75,40 +127,11 @@ class Session:
     ##########
     # compare
 
-    def compare_library(self) -> tuple[list[objects.track.Track],list[objects.track.Track]]:
-        '''Returns tuple of list of changed tracks in library: (added,removed)'''
 
-        local_lib = self.db_con.get_library(self.user_id)
-        online_lib = self.spotify.fetch_library()
+    ##########
+    # webserver interfaces (?)
 
-        # Creates list of songs that exist in both local and online library
-        overlap = [local_track for local_track in local_lib for online_track in online_lib if local_track.get_id() == online_track.get_id()]
 
-        added = []
-        removed = []
-
-        # Creates lists off added and removed songs
-        for overlap_track in overlap:
-            
-            match_found = False
-            for local_track in local_lib:
-                if local_track.get_id() == overlap_track.get_id():
-                    match_found = True
-                    break
-            if not match_found:
-                removed.append(local_track)
-
-            match_found = False
-            for online_track in online_lib:
-                if online_track.get_id() == overlap_track.get_id():
-                    match_found = True
-                    break
-            if not match_found:
-                added.append(online_track)
-
-        return (added,removed)
-
-        
 def kekw(a,b):
     print(f"a: {a}  b: {b}")
     if a==b:

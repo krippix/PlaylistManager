@@ -211,9 +211,12 @@ class Database:
     def add_user(self, user_id: str, display_name: str):
         '''Adds user to the database'''
 
+
     def add_playlist(self, playlist: objects.playlist.Playlist):
         '''Adds playlist to the database'''
 
+    def update_library(self, library: list[objects.track.Track]):
+        '''Takes list of tracks and user_id, sets tracks as beeing part of the users library'''
 
 if __name__ == "__main__":
     logging.error("This file is not supposed to be executed.")

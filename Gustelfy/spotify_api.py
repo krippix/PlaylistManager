@@ -74,8 +74,18 @@ class Spotify_api:
     # get
     ############
 
+    def get_user_id(self) -> str:
+        '''Returns current user's spotify id.'''
+        return self.spotify.current_user()["id"]
+
+
+    def get_display_name(self) -> str:
+        '''returns current user's display name.'''
+        return self.spotify.current_user()["display_name"]
+    
+
     def fetch_track(self, track: objects.track.Track):
-        '''Pulls track from spotify api by id.'''
+        '''Pulls track from spotify api by id. Including rudimentary artist information'''
         result = self.spotify.track(track_id=track.get_id())
 
         if result is None:
