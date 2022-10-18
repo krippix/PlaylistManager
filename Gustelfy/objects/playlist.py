@@ -1,14 +1,24 @@
+# external
+# python native
+import time
+# project
+import util.config
+import objects.track
+
 class Playlist:
     
     id: str
     name: str
     owner_id: str
     is_managed: bool
+    tracks: list[objects.track.Track]
     
-    def __init__(self, id=str, name=str, owner_id=str):
+    def __init__(self, id=str, name=str, owner_id=str, **kwargs):
         self.set_id(id)
         self.set_name(name)
         self.set_owner_id(owner_id)
+        self.is_managed = kwargs.get("is_managed",False)
+        self.tracks = kwargs.get("tracks",[])
 
     def __str__(self):
         return self.get_name()
@@ -26,6 +36,7 @@ class Playlist:
     
     def is_managed(self) -> bool:
         return self.is_managed
+
     
     #########
     # setter

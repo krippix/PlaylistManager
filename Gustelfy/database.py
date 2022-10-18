@@ -150,6 +150,21 @@ class Database:
         return result_list
 
 
+    def get_playlists(self, user_id: str) -> list[objects.playlist.Playlist]:
+        '''Returns users playlists in database'''
+        self.logger.debug(f"get_playlists({user_id})")
+
+        db_result = self.db_con.execute("SELECT id_pkey,name,isgenreplaylist FROM playlists WHERE users_id_fkey=?",(user_id,)).fetchall()
+
+        playlists = []
+        for playlist in db_result:
+            playlists.append(objects.playlist.Playlist(id=playlist[0],name=playlist[1],owner_id=user_id,is_managed=bool(playlist[2])))
+            # Include tracks within playlist
+            db_result = self.db_con.execute("SELECT tracks.id_pkey,tracks.name,tracks.timestamp FROM tracks INNER JOIN playlists_content ON tracks.id_pkey=playlists_content.tracks_id_fkey WHERE playlists_content.playlists_id_fkey=?"(playlist[0],))
+
+        return playlists
+
+
     ################
     # modifications
 
