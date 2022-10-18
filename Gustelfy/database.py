@@ -18,7 +18,7 @@ class Database:
 
     def __init__(self):
         '''Connects to the existing database, or creates it anew.'''
-        self.logger = logging.getLogger("Gustelify.database")
+        self.logger = logging.getLogger("Gustelfy.database")
         settings = util.config.Config()
         self.db_con = sqlite3.connect(settings.get_dbpath())
         self.db_cur = self.db_con.cursor()
@@ -68,22 +68,20 @@ class Database:
     ################
     # getter
 
-    def get_track(self, track: str | objects.track.Track) -> objects.track.Track | None:
+    def get_track(self, track_id: str) -> objects.track.Track | None:
         '''Returns track with provided id. Tracks within db are expected to contain artist information!'''
+        self.logger.debug(f"get_track('{track_id}')")
 
-        if not isinstance(track, str):
-            id = track.get_id()
-        else:
-            id = track
-
-        db_result = self.db_cur.execute("SELECT id_pkey,name,timestamp FROM tracks WHERE id_pkey=?",(id,)).fetchall()
-        
+        db_result = self.db_cur.execute("SELECT id_pkey,name,timestamp FROM tracks WHERE id_pkey=?",(track_id,)).fetchall()
+        self.logger.debug(f"SELECT FROM: {db_result}")
 
         if len(db_result) == 0:
             return None
 
-        result = objects.track.Track(id=db_result[0][0],name=db_result[0][1],timestamp=db_result[0][2],artists=self.get_track_artists(id))
+        result = objects.track.Track(id=db_result[0][0],name=db_result[0][1],timestamp=db_result[0][2],artists=self.get_track_artists(track_id))
         result.set_artists(self.get_track_artists(result))
+
+        return result
 
 
     def get_track_artists(self, track: objects.track.Track | str) -> list[objects.artist.Artist]:
@@ -139,12 +137,14 @@ class Database:
 
     def get_library(self, user_id: str) -> list[objects.track.Track] | None:
         '''Returns songs in users (offline cached) library.'''
+        self.logger.debug("get_library()")
+
         result_list = []
         db_result = self.db_cur.execute("SELECT tracks_id_fkey FROM libraries WHERE users_id_fkey=?",(user_id,)).fetchall()
 
         if db_result:
             for track in db_result:
-                self.logger.debug(f"Adding track with id '{track[0]}' to resulting list.")
+                print(self.get_track(track[0]))
                 result_list.append(self.get_track(track[0]))
 
         return result_list
@@ -215,8 +215,18 @@ class Database:
     def add_playlist(self, playlist: objects.playlist.Playlist):
         '''Adds playlist to the database'''
 
-    def update_library(self, library: list[objects.track.Track]):
-        '''Takes list of tracks and user_id, sets tracks as beeing part of the users library'''
+    def update_library(self, user_id: str, delta: tuple[list[objects.track.Track],list[objects.track.Track]]):
+        '''Takes list differences between local and online database and updates database based on that. (added,removed)'''
+        self.logger.debug("update_library()")
+        self.logger.info(f"Updating library for '{user_id}'")
+
+        for track in delta[0]:
+            self.db_con.execute("INSERT INTO libraries (users_id_fkey,tracks_id_fkey) VALUES (?,?)",(user_id,track.get_id()))
+
+        for track in delta[1]:
+            self.db_con.execute("DELETE FROM libraries WHERE tracks_id_fkey=?",(track.get_id(),))
+
+        self.db_con.commit()
 
 if __name__ == "__main__":
     logging.error("This file is not supposed to be executed.")

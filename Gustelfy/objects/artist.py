@@ -37,7 +37,7 @@ class Artist:
 
     def is_expired(self) -> bool:
         ''''''
-        if int(time.time()) - self.timestamp > util.config.Config().get_config(category="EXPIRY",key="artists"):
+        if int(time.time()) - self.timestamp > int(util.config.Config().get_config(category="EXPIRY",key="artists")):
             return True
         else:
             return False
