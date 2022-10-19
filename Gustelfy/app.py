@@ -31,8 +31,12 @@ def before_first_request():
     spotify = spotify_api.Spotify_api()
 
 
-@app.route('/')
+@app.route('/', methods=('GET','POST'))
 def index():
+    print(flask.request.method)
+    if flask.request.method == 'POST':
+        print(f"Found keys: {flask.request.form}")
+        
     # Database init
     db_con = database.Database()
     spotify = spotify_api.Spotify_api()

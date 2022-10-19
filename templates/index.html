@@ -5,18 +5,23 @@
     <h2>Overview for {{ dict["display_name"] }}</h2>
     <table>
         <tr>
-            <th>Nr.</th>
             <th>Name</th>
-            <th>IsGenrePlaylist</th>
+            <th>managed</th>
         </tr>
-        {% for playlist in dict["playlists"] %}
-        <tr>
-            <td></td>
-            <td>{{ playlist[0] }}</td>
-            <td>{{ playlist[1] }}</td>
-        </tr>
-        {% endfor %}
-
+        <form method="post">
+            {% for playlist in dict["playlists"] %}
+            <tr>
+                <td>{{ playlist.get_name() }}</td>
+                
+                {% if playlist.is_managed() %}
+                <td><input type="checkbox" id="ismanaged.{{ playlist.get_id() }}" value="{{ playlist.get_id() }}" checked></td>
+                {% else %}
+                <td><input type="checkbox" id="ismanaged.{{ playlist.get_id() }}" value="{{ request.form["playlist."+playlist.get_id()] }}"></td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+            <input type="submit">
+        </form>
         <a>{{ dict["changes"] }}</a>
 
     </table>

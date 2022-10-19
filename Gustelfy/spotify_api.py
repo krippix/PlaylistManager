@@ -26,6 +26,7 @@ class Spotify_api:
 
     def __init__(self):
         # fetch credentials from config.ini
+        self.logger = logging.getLogger("Gustelfy.spotify_api")
         self.settings = util.config.Config()
         self.client_id = self.settings.get_config("AUTH","client_id")
         self.client_secret = self.settings.get_config("AUTH","client_secret")
@@ -57,22 +58,25 @@ class Spotify_api:
         missing_credentials = False
         
         if len(self.client_id) == 0:
-            logging.critical("No client id has been provided, please add one to data/config.ini")
+            self.logger.critical("No client id has been provided, please add one to data/config.ini")
             missing_credentials = True
         if len(self.client_secret) == 0:
-            logging.critical("No client secret has been provided, please add one to data/config.ini")
+            self.logger.critical("No client secret has been provided, please add one to data/config.ini")
             missing_credentials = True
         
         if missing_credentials:
-            logging.info("Exiting software.")
+            self.logger.info("Exiting software.")
             exit()
 
-    def get_connection(self) -> spotipy.Spotify:
-        return self.spotify
 
     ############
     # get
     ############
+
+    def get_connection(self) -> spotipy.Spotify:
+        '''Returns spotify API connection object.'''
+        return self.spotify
+    
 
     def get_user_id(self) -> str:
         '''Returns current user's spotify id.'''
@@ -84,13 +88,20 @@ class Spotify_api:
         return self.spotify.current_user()["display_name"]
     
 
-    def fetch_track(self, track: objects.track.Track):
+    def fetch_track(self, track: objects.track.Track | str):
         '''Pulls track from spotify api by id. Including rudimentary artist information'''
-        result = self.spotify.track(track_id=track.get_id())
+        self.logger.debug(f"fetch_track({track})")
+        
+        if isinstance(track, str):
+            id = track
+        else:
+            id = track.get_id()
+            
+        result = self.spotify.track(track_id=id)
 
         if result is None:
             # TODO might need error handling here
-            logging.error("Track not found in spotify db.")
+            self.logger.error("Track not found in spotify db.")
             return None
 
         # add artists ids into list
@@ -99,24 +110,7 @@ class Spotify_api:
             artists.append(objects.artist.Artist(id=artist["id"], name=artist["name"], timestamp=int(time.time())))
 
         return objects.track.Track(id=track.get_id(), name=result["name"], artists=artists, timestamp=int(time.time()))
-
-
-    def fetch_track_artists(self, track: objects.track.Track) -> objects.track.Track:
-        '''Appends artist information to track object, and updates the involved artists'''
-        artists = []
-
-        for artist in track.get_artists():
-            result = self.spotify.artist(artist.get_id())
-            artists.append(objects.artist.Artist(id=artist.get_id(), name=result["name"], genres=result["genres"]))
-
-        track.set_artists(artists)
-        return track
     
-
-    def fetch_artist(self, id: str) -> objects.artist.Artist:
-        '''Returns one artist based on input id.'''
-        
-
 
     def fetch_library(self) -> list[objects.track.Track]:
         '''Takes all tracks from users library and returns them as List of track objects'''
@@ -147,8 +141,10 @@ class Spotify_api:
         return result_list
 
 
-    def fetch_playlists(self):
+    def fetch_playlists(self) -> list[objects.playlist.Playlist]:
         '''Returns a list of the users created playlists.'''
+        self.logger.debug(f"fetch_playlists()")
+        
         result_list = []
         current_user_id = self.spotify.current_user()["id"]
 
@@ -169,12 +165,33 @@ class Spotify_api:
 
         return result_list
 
+    
+    def fetch_playlist_songs(self, playlist_id: str) -> list[objects.track.Track]:
+        '''Returns list of songs in given playlist.'''
+        self.logger.debug(f"fetch_playist_songs({playlist_id})")
+        
+        tracks = []
+
+        api_result = self.spotify.playlist_tracks(playlist_id=playlist_id)
+
+        for track in api_result["item"]:
+            # Handle artists in track
+            artists = []
+            for artist in track["track"]["artists"]:
+                artists.append(objects.artist.Artist(id=artist["id"],name=artist["name"],timestamp=int(time.time())))
+            # Create final track object
+            tracks.append(objects.track.Track(id=track["track"]["id"],name=track["track"]["name"],artists=artists,timestamp=int(time.time())))
+        
+        return tracks
+
+
     def add_genres(self, artist: objects.artist.Artist) -> objects.artist.Artist:
         '''adds genres to artist object'''
         result = self.spotify.artist(artist.get_id())
         artist.set_genres = result["genres"]
         return artist
 
-    
-    def test(self):
-        print(self.spotify.artist(""))
+
+if __name__ == "__main__":
+    logging.error("This file is not supposed to be executed.")
+    exit()
