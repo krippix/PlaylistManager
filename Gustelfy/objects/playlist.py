@@ -2,8 +2,8 @@
 # python native
 import time
 # project
-import util.config
-import objects.track
+from Gustelfy.util import config
+from Gustelfy.objects import track
 
 class Playlist:
     

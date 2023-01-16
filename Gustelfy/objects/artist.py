@@ -2,7 +2,7 @@
 # python native
 import time
 # project
-import util.config
+from Gustelfy.util import config
 
 class Artist:
 
