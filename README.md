@@ -18,6 +18,18 @@ This is an attempt at automatically sorting my Spotify music using the follwing 
   - remove song from deleted songs playlist
 - adding new songs to genre playist will maybe be done via email? dunno yet
 
+## Data within the database
+
+The follwing data will be saved in the database
+
+- albums
+- artists
+- favorites
+- genres
+- playlists
+- tracks
+- users
+
 ## ToDo
 
 - [ ] figure out how to work user independent
