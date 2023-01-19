@@ -1,5 +1,4 @@
 # external
-import spotipy
 # python native
 import logging,sqlite3,time
 # project
@@ -31,6 +30,7 @@ class Database:
 
     def ensure_default_tables(self):
         '''Checks if (default)table exists within database, creates it if it was missing.'''
+        #TODO pull this information out of a properly formatted file
         default_tables = {
             # 1st layer (no dependencies)
             "users": "CREATE TABLE users(id_pkey TEXT NOT NULL PRIMARY KEY, displayname TEXT, access_token TEXT, token_type TEXT, expires_in INTEGER, scope TEXT, expires_at INTEGER, refresh_token TEXT)",
