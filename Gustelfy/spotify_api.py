@@ -1,18 +1,19 @@
 # external
 import spotipy
 # python native
-import logging, time
+import logging
+import time
 # project
-import util.config
-import objects.track, objects.artist, objects.playlist
+from Gustelfy.util import config
+from Gustelfy.objects import track, artist, playlist
 
-# TODO this should be made back into instances (probably)
+
 class Spotify_api:
-    '''Class containing the spotify API connection, singleton.'''
-    
-    _instance = None
+    """Class handling the spotify connection
+    """
+
     spotify: spotipy.Spotify
-    settings: util.config.Config
+    settings: config.Config
     client_id: str
     client_secret: str
     scopes = [
@@ -44,14 +45,6 @@ class Spotify_api:
 
         # connect to spotify
         self.spotify = spotipy.Spotify(auth_manager=auth_manager)
-
-
-    def __new__(cls):
-        # this should make this class a singleton
-        if not cls._instance:
-            cls._instance = object.__new__(cls)
-        return cls._instance
-
 
     def check_credentials(self):
         '''Checks if any credentials have been provided in config.ini'''
@@ -88,7 +81,7 @@ class Spotify_api:
         return self.spotify.current_user()["display_name"]
     
 
-    def fetch_track(self, track: objects.track.Track | str):
+    def fetch_track(self, track: track.Track | str):
         '''Pulls track from spotify api by id. Including rudimentary artist information'''
         self.logger.debug(f"fetch_track({track})")
         
@@ -107,12 +100,12 @@ class Spotify_api:
         # add artists ids into list
         artists = []
         for artist in result["artists"]:
-            artists.append(objects.artist.Artist(id=artist["id"], name=artist["name"], timestamp=int(time.time())))
+            artists.append(artist.Artist(id=artist["id"], name=artist["name"], timestamp=int(time.time())))
 
-        return objects.track.Track(id=track.get_id(), name=result["name"], artists=artists, timestamp=int(time.time()))
+        return track.Track(id=track.get_id(), name=result["name"], artists=artists, timestamp=int(time.time()))
     
 
-    def fetch_library(self) -> list[objects.track.Track]:
+    def fetch_library(self) -> list[track.Track]:
         '''Takes all tracks from users library and returns them as List of track objects'''
         result_list = []
 
@@ -133,15 +126,15 @@ class Spotify_api:
                 # put artists into one list
                 artists = []
                 for artist in track["artists"]:
-                    artists.append(objects.artist.Artist(artist["id"],artist["name"], timestamp=int(time.time())))
+                    artists.append(artist.Artist(artist["id"],artist["name"], timestamp=int(time.time())))
                 
-                result_list.append(objects.track.Track(id=track["id"],name=track["name"],artists=artists, timestamp=int(time.time())))
+                result_list.append(track.Track(id=track["id"],name=track["name"],artists=artists, timestamp=int(time.time())))
             offset += 50
         
         return result_list
 
 
-    def fetch_playlists(self) -> list[objects.playlist.Playlist]:
+    def fetch_playlists(self) -> list[playlist.Playlist]:
         '''Returns a list of the users created playlists.'''
         self.logger.debug(f"fetch_playlists()")
         
@@ -161,12 +154,12 @@ class Spotify_api:
 
             for item in results["items"]:
                 if item["owner"]["id"] == current_user_id:
-                    result_list.append(objects.playlist.Playlist(id=item["id"], name=item["name"], owner_id=current_user_id))
+                    result_list.append(playlist.Playlist(id=item["id"], name=item["name"], owner_id=current_user_id))
 
         return result_list
 
     
-    def fetch_playlist_songs(self, playlist_id: str) -> list[objects.track.Track]:
+    def fetch_playlist_songs(self, playlist_id: str) -> list[track.Track]:
         '''Returns list of songs in given playlist.'''
         self.logger.debug(f"fetch_playist_songs({playlist_id})")
         
@@ -178,14 +171,14 @@ class Spotify_api:
             # Handle artists in track
             artists = []
             for artist in track["track"]["artists"]:
-                artists.append(objects.artist.Artist(id=artist["id"],name=artist["name"],timestamp=int(time.time())))
+                artists.append(artist.Artist(id=artist["id"],name=artist["name"],timestamp=int(time.time())))
             # Create final track object
-            tracks.append(objects.track.Track(id=track["track"]["id"],name=track["track"]["name"],artists=artists,timestamp=int(time.time())))
+            tracks.append(track.Track(id=track["track"]["id"],name=track["track"]["name"],artists=artists,timestamp=int(time.time())))
         
         return tracks
 
 
-    def add_genres(self, artist: objects.artist.Artist) -> objects.artist.Artist:
+    def add_genres(self, artist: artist.Artist) -> artist.Artist:
         '''adds genres to artist object'''
         result = self.spotify.artist(artist.get_id())
         artist.set_genres = result["genres"]

@@ -1,18 +1,21 @@
 # external
-import spotipy, flask
+import flask
+import spotipy
 # python native
-import logging, os
+import logging
+import sys
 # project
-import util.config
-import objects.artist, objects.track
-import session, spotify_api, database
+from Gustelfy import spotify_api, session
+from Gustelfy.database import database
+from Gustelfy.objects import track, playlist, album
+from Gustelfy.util import config
 
 # prepare project configuration
-settings = util.config.Config()
+settings = config.Config()
 settings.checkConfig()
 
 # Logging config
-logger = logging.getLogger("Gustelfy")
+logger = logging.getLogger(__name__)
 try:
     logger.setLevel(settings.get_loglevel())
 except:
@@ -21,6 +24,7 @@ except:
 
 # Flask configuration
 app = flask.Flask(__name__, root_path=settings.folders["root"], template_folder=settings.folders["templates"])
+
 
 @app.before_first_request
 def before_first_request():
@@ -54,7 +58,24 @@ def index():
     return flask.render_template('index.html', dict=data)
 
 
-if __name__ == "__main__":
-    logger.error("This is a flask application, start it with 'flask run'")
+def test():
+    """Testrun without flask"""
+    logger = logging.getLogger(__name__)
     
-    exit()
+    # Check config for errors
+    settings = config.Config()
+    settings.checkConfig()
+    
+    # Connect to database and fix table
+    logger.info("Establishing database connection.")
+    db = database.Database("sqlite3").get_db_connection()
+    db.check()
+
+
+if __name__ == "__main__":    
+    try:
+        if sys.argv[1] == "testrun":
+            test()
+    except Exception as e:
+        logger.error("This is a flask application, start it with 'flask run'")
+        exit()

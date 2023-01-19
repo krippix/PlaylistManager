@@ -1,13 +1,17 @@
 # external
 # python native
-import logging, time
+import logging
+import time
 # project
-import spotify_api, database
-import util.config
-import objects.track, objects.playlist
+from Gustelfy import spotify_api
+from Gustelfy.database import database
+from Gustelfy.util import config
+from Gustelfy.objects import track, playlist
+
 
 class Session:
     '''Entrypoint for any data manipulation. Combines database and spotify API access. This will (probably) represent a user session.'''
+    
     spotify: spotify_api.Spotify_api
     db_con: database.Database
     user_id: str
@@ -19,8 +23,7 @@ class Session:
         self.logger = logging.getLogger(f"Gustelfy.session.{self.user_id}")
         self.logger.info("Initialized session.")
 
-    ##########
-    # get
+    # ---- Getter Functions ----
 
     def get_homepage_data(self) -> dict:
         '''
@@ -39,11 +42,9 @@ class Session:
             "playlists": self.spotify.fetch_playlists(),
             "changes": self.get_library_changes()
         }
-        
         return result
 
-
-    def get_library_changes(self) -> tuple[list[objects.track.Track],list[objects.track.Track]]:
+    def get_library_changes(self) -> tuple[list[track.Track],list[track.Track]]:
         '''Returns tuple of list of changed tracks in library: (added,removed)'''
         self.logger.debug("get_library_changes()")
 
@@ -81,18 +82,19 @@ class Session:
 
         return (added,removed)
 
-
-    def get_playlists(self) -> list[objects.playlist.Playlist]:
+    def get_playlists(self) -> list[playlist.Playlist]:
         '''Kicks of updates of the users local playlists, returns current state of them.'''
         self.logger.debug(f"get_playlists()")
 
         self.update_playlists()
 
+    # ---- Setter Functions ----
 
-    ##########
-    # add / set
+    # ---- Other Functions ----
 
-    def add_track(self, track: objects.track.Track):
+    # -- add --
+
+    def add_track(self, track: track.Track):
         '''Attempts to add track to local database. Updates if already present and expired.'''
         self.logger.debug("add_track()")
         
@@ -107,8 +109,7 @@ class Session:
             if db_artist is None or db_artist.is_expired():
                 self.db_con.add_artist(self.spotify.fetch_artist())
             
-
-    def commit_library_changes(self, changes: tuple[list[objects.track.Track],list[objects.track.Track]]):
+    def commit_library_changes(self, changes: tuple[list[track.Track],list[track.Track]]):
         '''Updates the current user's library in the database.'''
         self.logger.debug("update_library()")
 
@@ -116,12 +117,9 @@ class Session:
 
         for track in library:
             self.add_track(track)
-
         self.db_con.update_library(self.user_id, changes)
 
-
-    ##########
-    # update
+    # -- update --
 
     def update_user(self):
         '''Updates the spotify users profile, including: library, playlists their content, genres and artist information.'''
@@ -133,7 +131,6 @@ class Session:
 
         # pull playlists
 
-
     def update_database(self):
         '''Updates all track entries in database. This shouldnt change which songs are in the database but update names and artist information.'''
         self.logger.debug("update_database()")
@@ -144,11 +141,9 @@ class Session:
 
         self.db_con.get_artist()
 
-
     def update_library(self):
         '''Updates users library'''
         self.logger.debug("update_library()")
-
 
     def update_playlists(self):
         '''Pulls current playlist state from spotify api, updates local db entry.'''
