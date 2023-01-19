@@ -3,6 +3,7 @@ import sqlite3
 # python native
 import logging
 import os
+import time
 from pathlib import Path
 from abc import ABC, abstractmethod
 # project
@@ -28,7 +29,7 @@ class SqliteCon(interface.Interface):
         db_result = self.cursor.execute("SELECT id_pkey,name,timestamp FROM artists WHERE id_pkey == ?", (id,)).fetchall()
         
         if len(db_result) == 1:
-            return objects.artist.Artist(id=db_result[0][0], name=db_result[0][1], timestamp=db_result[0][2])
+            return artist.Artist(id=db_result[0][0], name=db_result[0][1], timestamp=db_result[0][2])
         else:
             return None
 
@@ -55,10 +56,10 @@ class SqliteCon(interface.Interface):
         db_result = self.cursor.execute("SELECT id_pkey,name,isgenreplaylist FROM playlists WHERE users_id_fkey=?",(user_id,)).fetchall()
 
         playlists = []
-        for playlist in db_result:
-            playlists.append(objects.playlist.Playlist(id=playlist[0],name=playlist[1],owner_id=user_id,is_managed=bool(playlist[2])))
+        for _playlist in db_result:
+            playlists.append(playlist.Playlist(id=_playlist[0],name=_playlist[1],owner_id=user_id,is_managed=bool(_playlist[2])))
             # Include tracks within playlist
-            db_result = self.cursor.execute("SELECT tracks.id_pkey FROM tracks INNER JOIN playlists_content ON tracks.id_pkey=playlists_content.tracks_id_fkey WHERE playlists_content.playlists_id_fkey=?"(playlist[0],)).fetchall()
+            db_result = self.cursor.execute("SELECT tracks.id_pkey FROM tracks INNER JOIN playlists_content ON tracks.id_pkey=playlists_content.tracks_id_fkey WHERE playlists_content.playlists_id_fkey=?",(_playlist[0],)).fetchall()
             tracks = []
             for track in db_result:
                 tracks.append(self.get_track(track[0]))
@@ -66,7 +67,7 @@ class SqliteCon(interface.Interface):
 
     def get_track(self, id: str) -> track.Track | None:
         """Returns track object. Or None, if nothing was found."""
-        db_result = self.cursor.execute("SELECT id_pkey,name,timestamp FROM tracks WHERE id_pkey=?",(track_id,)).fetchall()
+        db_result = self.cursor.execute("SELECT id_pkey,name,timestamp FROM tracks WHERE id_pkey=?",(id,)).fetchall()
         self.logger.debug(f"SELECT FROM: {db_result}")
 
         if len(db_result) == 0:
@@ -76,7 +77,7 @@ class SqliteCon(interface.Interface):
                 id=db_result[0][0],
                 name=db_result[0][1],
                 timestamp=db_result[0][2],
-                artists=self._get_track_artists(track_id)
+                artists=self._get_track_artists(id)
             )
 
     def get_user(self, id: str) -> user.User | None:
@@ -86,7 +87,7 @@ class SqliteCon(interface.Interface):
     def _get_track_artists(self, track_id: str) -> artist.Artist | None:
         """Returns all artists accociated with the given track id."""
         result_list = []
-        db_result = self.cursor.execute("SELECT artists_id_fkey from tracks_artists WHERE tracks_id_fkey=?",(id,)).fetchall()
+        db_result = self.cursor.execute("SELECT artists_id_fkey from tracks_artists WHERE tracks_id_fkey=?",(track_id,)).fetchall()
 
         for item in db_result:
             next_result = self.get_artist(item[0])
@@ -141,7 +142,7 @@ class SqliteCon(interface.Interface):
 
         # if nothing is found, simply add the new song into the db, else update entry
         if len(db_result) == 0:
-            self.cursor.execute("INSERT INTO tracks (id_pkey,name,timestamp) VALUES (?,?,?)", (track.get_id(), track.get_name(), timestamp))
+            self.cursor.execute("INSERT INTO tracks (id_pkey,name,timestamp) VALUES (?,?,?)", (track.get_id(), track.get_name(), int(time.time())))
         else:
             self.cursor.execute("UPDATE tracks SET name = ?, timestamp = ? WHERE id_pkey = ?", (track.get_name(), timestamp, track.get_id()))
 
@@ -170,7 +171,7 @@ class SqliteCon(interface.Interface):
 
     # -- Update --
 
-    def update_favorites(self, delta: tuple[list[track.Track], list[track.Track]]):
+    def update_favorites(self, user_id, delta: tuple[list[track.Track], list[track.Track]]):
         """Updates list of favorites with given input
 
         Args:

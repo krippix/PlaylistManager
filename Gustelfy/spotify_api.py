@@ -5,7 +5,7 @@ import logging
 import time
 # project
 from Gustelfy.util import config
-from Gustelfy.objects import track, artist, playlist
+from Gustelfy.objects import *
 
 
 class Spotify_api:
@@ -28,7 +28,7 @@ class Spotify_api:
     def __init__(self):
         # fetch credentials from config.ini
         self.logger = logging.getLogger("Gustelfy.spotify_api")
-        self.settings = util.config.Config()
+        self.settings = config.Config()
         self.client_id = self.settings.get_config("AUTH","client_id")
         self.client_secret = self.settings.get_config("AUTH","client_secret")
 
@@ -81,16 +81,11 @@ class Spotify_api:
         return self.spotify.current_user()["display_name"]
     
 
-    def fetch_track(self, track: track.Track | str):
+    def fetch_track(self, track_id: str):
         '''Pulls track from spotify api by id. Including rudimentary artist information'''
         self.logger.debug(f"fetch_track({track})")
-        
-        if isinstance(track, str):
-            id = track
-        else:
-            id = track.get_id()
-            
-        result = self.spotify.track(track_id=id)
+               
+        result = self.spotify.track(track_id=track_id)
 
         if result is None:
             # TODO might need error handling here
@@ -99,36 +94,36 @@ class Spotify_api:
 
         # add artists ids into list
         artists = []
-        for artist in result["artists"]:
-            artists.append(artist.Artist(id=artist["id"], name=artist["name"], timestamp=int(time.time())))
+        for curr_artist in result["artists"]:
+            artists.append(artist.Artist(id=curr_artist["id"], name=curr_artist["name"], timestamp=int(time.time())))
 
-        return track.Track(id=track.get_id(), name=result["name"], artists=artists, timestamp=int(time.time()))
+        return track.Track(id=track_id, name=result["name"], artists=artists, timestamp=int(time.time()))
     
 
-    def fetch_library(self) -> list[track.Track]:
-        '''Takes all tracks from users library and returns them as List of track objects'''
+    def fetch_favorites(self) -> list[track.Track]:
+        '''Takes all tracks from users favorites and returns them as List of track objects'''
         result_list = []
 
-        # fetch library
+        # fetch favorites
         done = False
         offset = 0
 
-        # iterate over library
+        # iterate over favorites
         while not done:
             results = self.spotify.current_user_saved_tracks(limit=50,offset=offset)
 
             if len(results["items"]) < 50:
                 done = True
             
-            for track in results["items"]:
-                track = track["track"]
+            for song in results["items"]:
+                song = song["track"]
                 
                 # put artists into one list
                 artists = []
-                for artist in track["artists"]:
-                    artists.append(artist.Artist(artist["id"],artist["name"], timestamp=int(time.time())))
+                for curr_artist in song["artists"]:
+                    artists.append(artist.Artist(curr_artist["id"],curr_artist["name"], timestamp=int(time.time())))
                 
-                result_list.append(track.Track(id=track["id"],name=track["name"],artists=artists, timestamp=int(time.time())))
+                result_list.append(track.Track(id=song["id"],name=song["name"],artists=artists, timestamp=int(time.time())))
             offset += 50
         
         return result_list

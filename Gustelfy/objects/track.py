@@ -73,7 +73,7 @@ class Track:
 
     def is_expired(self) -> bool:
         ''''''
-        if int(time.time()) - self.timestamp > int(util.config.Config().get_config(category="EXPIRY",key="tracks")):
+        if int(time.time()) - self.timestamp > int(config.Config().get_config(category="EXPIRY",key="tracks")):
             return True
         else:
             return False

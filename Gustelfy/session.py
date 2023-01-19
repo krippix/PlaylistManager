@@ -40,18 +40,18 @@ class Session:
         result = {
             "display_name": self.spotify.get_display_name(),
             "playlists": self.spotify.fetch_playlists(),
-            "changes": self.get_library_changes()
+            "changes": self.get_favorites_changes()
         }
         return result
 
-    def get_library_changes(self) -> tuple[list[track.Track],list[track.Track]]:
-        '''Returns tuple of list of changed tracks in library: (added,removed)'''
-        self.logger.debug("get_library_changes()")
+    def get_favorites_changes(self) -> tuple[list[track.Track],list[track.Track]]:
+        '''Returns tuple of list of changed tracks in favorites: (added,removed)'''
+        self.logger.debug("get_favorites_changes()")
 
-        local_lib = self.db_con.get_library(self.user_id)
-        online_lib = self.spotify.fetch_library()
+        local_lib = self.db_con.get_favorites(self.user_id)
+        online_lib = self.spotify.fetch_favorites()
 
-        # Creates list of songs that exist in both local and online library
+        # Creates list of songs that exist in both local and online favorites
         overlap = [local_track for local_track in local_lib for online_track in online_lib if local_track.get_id() == online_track.get_id()]
 
         added = []
@@ -101,7 +101,7 @@ class Session:
         # Check if track is already part of the database
         db_track = self.db_con.get_track(track.get_id())
         if db_track is None or track != db_track or db_track.is_expired():
-            self.db_con.add_track(self.spotify.fetch_track(track))
+            self.db_con.add_track(self.spotify.fetch_track(track.get_id()))
         
         # check if artist information of track is up to date
         for artist in track.get_artists():
@@ -109,25 +109,25 @@ class Session:
             if db_artist is None or db_artist.is_expired():
                 self.db_con.add_artist(self.spotify.fetch_artist())
             
-    def commit_library_changes(self, changes: tuple[list[track.Track],list[track.Track]]):
-        '''Updates the current user's library in the database.'''
-        self.logger.debug("update_library()")
+    def commit_favorites_changes(self, changes: tuple[list[track.Track],list[track.Track]]):
+        '''Updates the current user's favorites in the database.'''
+        self.logger.debug("update_favorites()")
 
-        library = self.spotify.fetch_library()
+        favorites = self.spotify.fetch_favorites()
 
-        for track in library:
+        for track in favorites:
             self.add_track(track)
-        self.db_con.update_library(self.user_id, changes)
+        self.db_con.update_favorites(self.user_id, changes)
 
     # -- update --
 
     def update_user(self):
-        '''Updates the spotify users profile, including: library, playlists their content, genres and artist information.'''
+        '''Updates the spotify users profile, including: favorites, playlists their content, genres and artist information.'''
         self.logger.debug("update_user()")
         
         # check if displayname changed or smth like that
 
-        # pull library
+        # pull favorites
 
         # pull playlists
 
@@ -141,9 +141,9 @@ class Session:
 
         self.db_con.get_artist()
 
-    def update_library(self):
-        '''Updates users library'''
-        self.logger.debug("update_library()")
+    def update_favorites(self):
+        '''Updates users favorites'''
+        self.logger.debug("update_favorites()")
 
     def update_playlists(self):
         '''Pulls current playlist state from spotify api, updates local db entry.'''
