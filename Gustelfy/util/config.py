@@ -1,7 +1,11 @@
 # external
 # python native
-import logging,os,configparser,pathlib
+import logging
+import os
+import configparser
+import pathlib
 # project
+
 
 class Config:
     '''
@@ -20,15 +24,13 @@ class Config:
     _instance = None
     
     def __new__(cls):
-        # Turns this class into a singleton
+        '''Turns this class into a singleton'''
         if cls._instance is None:
             cls._instance = super(Config, cls).__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
-
     def __init__(self):
-        '''Init, but only executed once'''
         if not self._initialized:
             self.folders["root"] = pathlib.Path(__file__).parent.parent.parent
             self.config = configparser.ConfigParser()
@@ -36,7 +38,6 @@ class Config:
             self.ensureBaseFolders()
             self._initialized = True
     
-
     def generateConfig(self):
         '''Generates entire configuration anew, this will CLEAR any previous configuration'''
         self.config = self.custom_default_config()
@@ -46,7 +47,6 @@ class Config:
         logging.info("Success! config.ini has been created!")
         logging.info("Change its parameters and restart the program.")
         exit()
-
 
     def checkConfig(self):
         '''Check if config.ini is present, and whether it's incomplete. Repairs missing parts.'''
@@ -78,10 +78,8 @@ class Config:
                 if not defaultkey[0] in currentKeys:
                     logging.warning(f"Key '{defaultkey[0]}' missing. Adding it now.")
                     self.config[section][defaultkey[0]] = defaultkey[1]
-                
         self.writeConfig()
         logging.info("Config check completed.")
-
 
     def writeConfig(self):
         '''Write config to file'''
@@ -97,7 +95,6 @@ class Config:
         for folder in self.folders.values():
             self.ensureFolder(folder)
 
-
     @staticmethod
     def ensureFolder(folder_path: pathlib.Path):
         '''takes path, and creates missing folders in that path if they don't exist'''
@@ -108,9 +105,7 @@ class Config:
             except Exception as e:
                 logging.error(f"Failed to create directories for {folder_path}: {e}")
 
-    #
-    # ------ GETTER ------
-    #
+    # ---- Getter Functions ----
 
     def get_config(self, category, key):
         '''Calling just the string within the .ini without any checks'''
@@ -120,10 +115,8 @@ class Config:
         except Exception as e:
             logging.error(f"Failed to read 'config.ini': {e}")
 
-
     def get_datafolder(self) -> pathlib.Path:
-        return self.DATA_FOLDER
-
+        return self.folders["data"]
 
     def get_inipath(self) -> pathlib.Path:
         return self.INI_FILE
@@ -131,10 +124,8 @@ class Config:
     def get_dbpath(self) -> pathlib.Path:
         return self.DB_FILE
 
-
     def get_logpath(self) -> pathlib.Path:
         pass
-
 
     def get_loglevel(self) -> int:
         '''Returns integer value of string in the config. Defaults to info'''
@@ -148,7 +139,6 @@ class Config:
         logging.error("Failed to determine loglevel, defaulting to debug.")
         return 20
 
-
     def get_bot_prefix(self):
         '''Attempts to get bot prefix from config.ini. Defaults to "!".'''
         prefix = self.get_config("CLIENT","prefix")
@@ -159,28 +149,22 @@ class Config:
         
         return prefix
 
-    #
-    # ------ SETTER ------
-    #
+    # ---- Setter Functions ----
 
     def set_config(self, category, key, value):
         ''''Sets config option.'''
         self.config[category][key] = value
         self.writeConfig()
 
-    ########################
-    # CUSTOM SECTION
-    ########################
+    # ---- Other Functions ----
 
     def custom_files(self):
         '''This is where you can add custom locations that should be handled by the class.'''
         self.folders["data"] = os.path.join(self.folders["root"], "data")
         self.folders["templates"] = os.path.join(self.folders["root"], "templates")
-        #self.folders["sounds_custom"] = os.path.join(self.folders["sounds"], "custom")
         self.INI_FILE = os.path.join(self.folders["data"], "config.ini")
         self.DB_FILE = os.path.join(self.folders["data"], "database.db")
 
-        
     def custom_default_config(self):
         '''Here you can define the .ini file you want generated'''
         defaultconfig = configparser.ConfigParser()
@@ -189,14 +173,14 @@ class Config:
             "client_id" : "",
             "client_secret" : ""
         }
-
         defaultconfig['SCRIPT'] = {
             "loglevel" : "info"
         }
-
         defaultconfig["EXPIRY"] = {
-            "tracks" : 3600,
-            "artists" : 3600
+            "tracks"  : 3600,
+            "artists" : 3600,
+            "album"   : 3600,
+            "user"    : 3600
         }
 
         return defaultconfig

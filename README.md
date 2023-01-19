@@ -5,7 +5,10 @@
 API KEY can be found here:
 <https://developer.spotify.com/dashboard/>
 
-## Ziel
+
+`python -m Gustelfy`
+
+## Ziel / Goal
 
 Ziel dieser Software ist es, es mehreren Benutzern zu ermöglichen ihre Playlists nach dem von mir genutzten System zu sortieren:
 - Zentral für die Verwaltung ist ob ein song einen "like" hat
@@ -18,9 +21,7 @@ Die Datenbank soll dabei dafür sorgen dass die API Anfragen auf ein Mindestmaß
 Gleichzeitig wird über die Datenbank festgestellt welche Änderungen stattgefunden haben.
 Zusätzlich werden die Benutzerdaten dort gespeichert.
 
-
-#################################################
-
+---
 
 This is an attempt at automatically sorting my Spotify music using the follwing scheme:
 
@@ -32,6 +33,18 @@ This is an attempt at automatically sorting my Spotify music using the follwing 
   - queue song for adding to genre playlist (will probably be done manually)
   - remove song from deleted songs playlist
 - adding new songs to genre playist will maybe be done via email? dunno yet
+
+## Data within the database
+
+The follwing data will be saved in the database
+
+- albums
+- artists
+- favorites
+- genres
+- playlists
+- tracks
+- users
 
 ## ToDo
 
