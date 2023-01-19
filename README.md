@@ -5,6 +5,8 @@
 API KEY can be found here:
 <https://developer.spotify.com/dashboard/>
 
+`python -m Gustelfy`
+
 ## Goal
 
 This is an attempt at automatically sorting my Spotify music using the follwing scheme:
