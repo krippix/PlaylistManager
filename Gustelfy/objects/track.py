@@ -3,36 +3,34 @@
 import time
 # project
 from Gustelfy.util import config
-from Gustelfy.objects import track, artist, playlist
+from Gustelfy.objects import spotifyObject
+from Gustelfy.objects import artist
 
 
-class Track:
+class Track(spotifyObject.SpotifyObject):
+    """Spotify Track object, contains track (song) information
+    """
 
-    id: str
-    name: str
     artists = []
-    timestamp: int
-    expires_after: int
     
-    def __init__(self, id: str, name: str, artists: list, timestamp: int):
+    def __init__(self, id: str, name: str, artists: list[artist.Artist], timestamp=int(time.time())):
         '''Creates new artist object with the provided data'''
         self.set_id(id)
         self.set_name(name)
-        self.timestamp = timestamp
+        self.set_timestamp(timestamp)
         
         if artists is not None:
             self.set_artists(artists)
 
-    def __str__(self):
-        '''Defines behaviour within print statements.'''
-        return self.name
+    def __eq__(self, other) -> bool:
+        """Defines behaviour of the '==' operator
 
-    def __repr__(self):
-        '''Defines behaviour if eg. withn a list in a print statement: [object,]'''
-        return self.__str__()
+        Args:
+            other (Track): object to compare to
 
-    def __eq__(self, other):
-        '''Defines behaviour of == operator'''
+        Returns:
+            bool: whether or not the objects are considered equal
+        """
 
         if self.get_id() != other.get_id():
             return False
@@ -54,44 +52,22 @@ class Track:
                 return False
         return True
 
-
-    ########
-    # getter
-
-    def get_id(self) -> str:
-        return self.id
-    
-    def get_name(self) -> str:
-        return self.name
+    # ---- Getter Functions ----
 
     def get_artists(self) -> list[artist.Artist]:
-        '''Returns list containing artist objects'''
+        """Returns list of artists accociated with this track.
+
+        Returns:
+            list[artist.Artist]: list of the contained artists
+        """
         return self.artists
 
-    def get_timestamp(self) -> int:
-        return self.timestamp
-
-    def is_expired(self) -> bool:
-        ''''''
-        if int(time.time()) - self.timestamp > int(config.Config().get_config(category="EXPIRY",key="tracks")):
-            return True
-        else:
-            return False
-    
-    #########
-    # setter
-    
-    def set_id(self, id: str):
-        '''Sets the tracks spotify id'''
-        self.id = id
-
-    def set_name(self, name: str):
-        '''Sets the tracks name'''
-        self.name = name
+    # ---- Setter Functions ----
    
     def set_artists(self, artists: list):
         '''Takes a list of artists and sets them for the track object'''
         self.artists = []
         for artist in artists:
             self.artists.append(artist)
-        
+
+    # ---- Other Functions ----

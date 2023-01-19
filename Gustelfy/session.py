@@ -151,16 +151,7 @@ class Session:
 
         online_playlists = self.spotify.fetch_playlists()
         db_playlists = self.db_con.get_playlists(self.user_id)
-
-
-
-    ##########
-    # compare
-
-
-    ##########
-    # webserver interfaces (?)
-
+        
 
 if __name__ == "__main__":
     logging.error("This file is not supposed to be executed.")
