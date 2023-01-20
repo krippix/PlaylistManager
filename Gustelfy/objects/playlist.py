@@ -2,56 +2,69 @@
 # python native
 import time
 # project
-from Gustelfy.util import config
+from Gustelfy.objects import spotifyObject
 from Gustelfy.objects import track
 
-class Playlist:
+class Playlist(spotifyObject.SpotifyObject):
     
-    id: str
-    name: str
     owner_id: str
     managed: bool
     tracks = []
     
-    def __init__(self, id=str, name=str, owner_id=str, **kwargs):
+    def __init__(self, id: str, name: str, owner_id: str, tracks: list[track.Track], managed=False, timestamp=int(time.time())):
         self.set_id(id)
         self.set_name(name)
+        self.set_timestamp(timestamp)
+
         self.set_owner_id(owner_id)
-        self.managed = kwargs.get("is_managed",False)
-        self.tracks = kwargs.get("tracks",[])
+        self.set_tracks(tracks)
+        self.set_managed(managed)
 
-    def __str__(self):
-        return self.get_name()
-    def __repr__(self):
-        return self.__str__()
+    # ---- Getter Functions ----
 
-    ########
-    # getter
+    def get_owner_id() -> str:
+        return self.owner_id
 
-    def get_id(self) -> str:
-        return self.id
-    
-    def get_name(self) -> str:
-        return self.name
-    
-    def is_managed(self) -> bool:
+    def is_managed() -> bool:
         return self.managed
 
-    
-    #########
-    # setter
-    
-    def set_id(self, id: str):
-        '''Sets the playlists spotify id'''
-        self.id = id
+    # ---- Setter Functions ----
 
-    def set_name(self, name: str):
-        '''Sets the playlists name'''
-        self.name = name
+    def set_owner_id(self, owner_id: str):
+        self.owner_id = owner_id
 
-    def set_owner_id(self, id: str):
-        '''Sets the playlist owners id'''
-        self.owner_id = id
+    def set_tracks(self, tracks: list[track.Track]):
+        self.tracks = tracks
 
     def set_managed(self, is_managed: bool):
         self.managed = is_managed
+
+    # ---- Other Functions ----
+
+    def is_equal(self, other: 'Playlist') -> bool:
+        """Defines behaviour of the '==' operator
+
+        Args:
+            other (Playlist): playlist to compare to
+
+        Returns:
+            bool: whether or not they are equal
+        """
+        if self.get_id() != other.get_id():
+            return False
+        if self.get_name() != other.get_name():
+            return False
+        if self.get_owner_id() != other.get_owner_id():
+            return False
+        if self.is_managed() != other.is_managed():
+            return False
+        
+        # Check if songs are the same
+        for track in self.get_tracks():
+            subresult = False
+            for other_track in other.get_tracks():
+                if track == other_track:
+                    subresult = True
+            if subresult == False:
+                return False
+        return True
