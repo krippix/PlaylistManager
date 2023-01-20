@@ -11,7 +11,7 @@ class Playlist(spotifyObject.SpotifyObject):
     managed: bool
     tracks = []
     
-    def __init__(self, id: str, name: str, owner_id: str, tracks: list[track.Track], managed=False, timestamp=int(time.time())):
+    def __init__(self, id: str, name: str, owner_id: str, tracks=[], managed=False, timestamp=int(time.time())):
         self.set_id(id)
         self.set_name(name)
         self.set_timestamp(timestamp)
