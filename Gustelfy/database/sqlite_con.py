@@ -144,7 +144,7 @@ class SqliteCon(interface.Interface):
         if len(db_result) == 0:
             self.cursor.execute("INSERT INTO tracks (id_pkey,name,timestamp) VALUES (?,?,?)", (track.get_id(), track.get_name(), int(time.time())))
         else:
-            self.cursor.execute("UPDATE tracks SET name = ?, timestamp = ? WHERE id_pkey = ?", (track.get_name(), timestamp, track.get_id()))
+            self.cursor.execute("UPDATE tracks SET name = ?, timestamp = ? WHERE id_pkey = ?", (track.get_name(), track.get_timestamp(), track.get_id()))
 
         # now ensure all involved artists also exist within the database
         rebuild_track_artists = False

@@ -15,6 +15,7 @@ class Interface(ABC):
 
     def __init__(self):
         '''Connect to the database.'''
+        self.logger = logging.getLogger(__name__)
         self.settings = config.Config()
         self.connect_database()
 
