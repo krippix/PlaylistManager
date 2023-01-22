@@ -7,7 +7,7 @@ import sys
 # project
 from Gustelfy import spotify_api, session
 from Gustelfy.database import database
-from Gustelfy.objects import *
+from Gustelfy.objects import album, artist, playlist, track, user
 from Gustelfy.util import config
 
 # prepare project configuration
@@ -56,29 +56,6 @@ def index():
     user_session.commit_library_changes(data["changes"])
     
     return flask.render_template('index.html', dict=data)
-
-
-def test():
-    """Testrun without flask"""
-    logger = logging.getLogger(__name__)
-    
-    ##testalbum = album.Album("amogus", "amogus", [track.Track("amo_gus", "name", [artist.Artist("i","i",12)])], [artist.Artist("i","i",12)])
-
-    # Check config for errors
-    settings = config.Config()
-    settings.checkConfig()
-    
-    # Connect to database and fix table
-    logger.info("Establishing database connection.")
-    db = database.Database("sqlite3").get_db_connection()
-    db.check()
-
-    # Connect to spotify
-    spotify = spotify_api.Spotify_api()
-
-    user_session = session.Session(spotify, db)
-    data = user_session.get_homepage_data()
-    user_session.commit_favorites_changes(data["changes"])
 
 
 if __name__ == "__main__":    
