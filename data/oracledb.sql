@@ -26,14 +26,13 @@ CREATE TABLE TRACKS(
     timestamp NUMBER(20)
 );
 CREATE TABLE GENRES(
-    id_pkey NUMBER(4) PRIMARY KEY,
-    name NVARCHAR2(64) NOT NULL
+    name NVARCHAR2(64) PRIMARY KEY
 );
 CREATE TABLE ALBUMS(
     id_pkey VARCHAR(22) PRIMARY KEY,
     name NVARCHAR2(64) NOT NULL,
     image_url VARCHAR2(200),
-    release_date NUMBER(20),
+    release_date VARCHAR(10),
     timestamp NUMBER(20)
 );
 CREATE TABLE ARTISTS(
@@ -64,23 +63,23 @@ CREATE TABLE ALBUM_CONTENT(
     FOREIGN KEY (tracks_id_fkey) REFERENCES TRACKS(id_pkey)
 );
 CREATE TABLE TRACK_ARTISTS(
-    albums_id_fkey VARCHAR(22),
+    artists_id_fkey VARCHAR(22),
     tracks_id_fkey VARCHAR(22),
-    PRIMARY KEY (albums_id_fkey,tracks_id_fkey),
-    FOREIGN KEY (albums_id_fkey) REFERENCES ALBUMS(id_pkey),
+    PRIMARY KEY (artists_id_fkey,tracks_id_fkey),
+    FOREIGN KEY (artists_id_fkey) REFERENCES ARTISTS(id_pkey),
     FOREIGN KEY (tracks_id_fkey) REFERENCES TRACKS(id_pkey)
 );
 CREATE TABLE PLAYLIST_GENRES(
     playlists_id_fkey VARCHAR(22),
-    genres_id_fkey NUMBER(4),
+    genres_id_fkey NVARCHAR2(64),
     PRIMARY KEY (playlists_id_fkey,genres_id_fkey),
     FOREIGN KEY (playlists_id_fkey) REFERENCES PLAYLISTS(id_pkey),
-    FOREIGN KEY (genres_id_fkey) REFERENCES GENRES(id_pkey)
+    FOREIGN KEY (genres_id_fkey) REFERENCES GENRES(name)
 );
 CREATE TABLE ARTIST_GENRES(
     artists_id_fkey VARCHAR(22),
-    genres_id_fkey NUMBER(4),
+    genres_id_fkey NVARCHAR2(64),
     PRIMARY KEY (artists_id_fkey,genres_id_fkey),
     FOREIGN KEY (artists_id_fkey) REFERENCES ARTISTS(id_pkey),
-    FOREIGN KEY (genres_id_fkey) REFERENCES GENRES(id_pkey)
+    FOREIGN KEY (genres_id_fkey) REFERENCES GENRES(name)
 );
