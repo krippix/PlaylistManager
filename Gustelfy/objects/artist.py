@@ -10,6 +10,7 @@ class Artist(spotifyObject.SpotifyObject):
 
     name: str
     genres: list[str]
+    image_url: str
     
     def __init__(self, id: str, name: str, genres=[], timestamp=int(time.time())):
         '''Creates new artist object with the provided data'''
@@ -24,10 +25,16 @@ class Artist(spotifyObject.SpotifyObject):
     def get_genres(self) -> list[str]:
         return self.genres
 
+    def get_image_url(self) -> str:
+        return self.image_url
+
     # ---- Setter Functions ----
 
     def set_genres(self, genres: list[str]):
         self.genres = genres
+
+    def set_image_url(self, url: str):
+        self.image_url = url
 
     # ---- Other Functions ----
 

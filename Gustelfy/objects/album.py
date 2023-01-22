@@ -11,6 +11,8 @@ class Album(spotifyObject.SpotifyObject):
 
     artists: list[artist.Artist]
     tracks: list[track.Track]
+    image_url: str
+    release_date: str
 
     def __init__(self, id: str, name: str, tracks: list[track.Track], artists: list[artist.Artist], timestamp=int(time.time())):
         self.set_id(id)
@@ -28,6 +30,12 @@ class Album(spotifyObject.SpotifyObject):
     def get_tracks() -> list[track.Track]:
         return self.tracks
 
+    def get_image_url() -> str:
+        return self.image_url
+
+    def get_release_date() -> str:
+        return self.release_date
+
     # ---- Setter Functions ----
     
     def set_tracks(self, tracks: list[track.Track]):
@@ -35,6 +43,12 @@ class Album(spotifyObject.SpotifyObject):
 
     def set_artists(self, artists: list[artist.Artist]):
         self.aritsts = artists
+
+    def set_image_url(self, url: str):
+        self.image_url = url
+
+    def set_release_date(self, date: str):
+        self.release_date = date
 
     # ---- Other Functions ----
 
