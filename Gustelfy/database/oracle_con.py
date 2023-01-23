@@ -15,6 +15,14 @@ class OracleCon(interface.Interface):
     # ---- Getter Functions ----
 
     def get_album(self, id: str) -> album.Album | None:
+        """Returns album filled with tracks from the database
+
+        Args:
+            id (str): spotify id of the album
+
+        Returns:
+            album.Album | None: Album, or None if no result found
+        """
         album_result = self.cursor.execute("SELECT id_pkey,name,image_url,timestamp,release_date FROM ALBUMS WHERE id_pkey=:id", id=id).fetchall()
         if not album_result:
             return None
@@ -30,6 +38,14 @@ class OracleCon(interface.Interface):
         return result
 
     def __get_album_artists(self, album_id: str) -> list[artist.Artist]:
+        """Gets list of artists associated with the given ID from the database
+
+        Args:
+            album_id (str): album's spotify ID
+
+        Returns:
+            list[artist.Artist]: list of Artist objects
+        """
         db_result = self.cursor.execute("SELECT artists_id_fkey FROM album_artists WHERE album_id_fkey=:album_id",album_id=album_id).fetchall()
         artist_list = []
         for db_artist in db_result:
@@ -37,6 +53,14 @@ class OracleCon(interface.Interface):
         return artist_list
 
     def __get_album_tracks(self, album_id: str) -> list[track.Track]:
+        """Returns list associated with the given Album ID from the database
+
+        Args:
+            album_id (str): Spotify API is String
+
+        Returns:
+            list[track.Track]: list of track objects
+        """
         db_result = self.cursor.execute("SELECT tracks_id_fkey FROM album_content WHERE albums_id_fkey = :album_id",album_id=album_id).fetchall()
         track_list = []
         for trk in db_result:
@@ -133,7 +157,43 @@ class OracleCon(interface.Interface):
     # -- add --
 
     def add_album(self, album: album.Album):
-        pass
+        """Adds Album, it's tracks and artists into the database
+
+        Args:
+            album (album.Album): Spotify Album object
+        """
+        # Add artists and track into the database
+        for artist in album.get_artists():
+            self.add_artist(artist)
+        for track in album.get_tracks():
+            self.add_track(track)
+        # Check if existing album is the same
+        if self.get_album(album.get_id()) is not None:
+            self.__update_album(album)
+            return
+        # Add new album and associations into the database
+        self.cursor.execute(
+            "INSERT INTO albums (id_pkey,name,image_url,timestamp,release_date) VALUES (:id,:name,:url,:timestamp,:release_date)",
+            id=album.get_id(),
+            name=album.get_name(),
+            url=album.get_image_url(),
+            timestamp=album.get_timestamp(),
+            release_date=album.get_release_date()
+        )
+        # Add tracks to album
+        for trk in album.get_tracks():
+            self.connection.commit(
+                "INSERT INTO album_content (albums_id_fkey,tracks_id_fkey) VALUES (:album_id,:track_id)",
+                album_id=album.get_id(),
+                track_id=trk.get_id()
+            )
+        for art in album.get_artists():
+            self.connection.commit(
+                "INSERT INTO album_artists (albums_id_fkey,artists_id_fkey) VALUES (:album_id,:artist_id)",
+                album_id=album.get_id(),
+                artist_id=art.get_id()
+            )
+        self.conneciton.commit()
 
     def add_artist(self, artist: artist.Artist):
         """adds artist and their accociated genre into the database.
@@ -213,7 +273,18 @@ class OracleCon(interface.Interface):
     # -- Update --
 
     def __update_album(self, album: album.Album):
-        pass
+        if album == self.get_album(album.get_id()):
+            #update timestamp
+            self.cursor.execute("UPDATE albums SET timestamp=:time WHERE id_pkey=:id",time=album.get_timestamp(),id=album.get_id())
+            self.conection.commit()
+        else:
+            # delete existing entries
+            self.cursor.execute("DELETE FROM album_content WHERE album_id_fkey=:id",id=album.get_id())
+            self.cursor.execute("DELETE FROM album_artists WHERE album_id_fkey=:id",id=album.get_id())
+            self.cursor.execute("DELETE FROM albums WHERE id_pkey=:id",id=album.get_id())
+            self.conection.commit()
+            self.add_album(album)
+        
 
     def __update_artist(self, artist: artist.Artist):
         self.cursor.execute(
