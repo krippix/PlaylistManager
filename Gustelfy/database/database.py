@@ -18,11 +18,12 @@ class Database():
             "sqlite3": self.sqlite3,
             "oracledb": self.oracledb
         }
-
+        logger.info("Establishing database connection.")
         if not connection in db_types:
             raise KeyError()
         else:
             self.connection = db_types[connection]()
+            self.connection.check()
 
     # ---- Getter Functions ----
 

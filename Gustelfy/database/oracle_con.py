@@ -225,7 +225,21 @@ class OracleCon(interface.Interface):
         self.connection.commit()
 
     def add_favorite(self, user: user.User, track: track.Track):
-        pass
+        """Adds favorite track association into database, and track if it isn't there yet.
+
+        Args:
+            user (user.User): User who likes that track
+            track (track.Track): track that the user likes
+        """
+        self.add_track(track)
+        result = self.cursor.execute("SELECT (tracks_id_fkey) FROM favorites WHERE users_id_fkey = :user_id",user_id=user.get_id()).fetchall()
+        id_list = []
+        for favorite in result:
+            id_list.append(favorite[0])
+        if track.get_id() in id_list:
+            return
+        self.cursor.execute("INSERT INTO favorites (tracks_id_fkey,users_id_fkey) VALUES (:track_id,:user_id)",track_id=track.get_id(),user_id=user.get_id())
+        self.connection.commit()
 
     def add_genre(self, genre: str):
         # Check if genre already exists
@@ -236,7 +250,38 @@ class OracleCon(interface.Interface):
             self.connection.commit()
 
     def add_playlist(self, playlist: playlist.Playlist):
-        pass   
+        """Adds Playlist to the database, updates existing one.
+
+        Args:
+            playlist (playlist.Playlist): Playlist to save locally
+        """
+        # Check if playlist already exists
+        if self.get_playlist(playlist.get_id()) is not None:
+            self.__update_playlist(playlist)
+            return
+        # Check if user exists
+        if self.get_user is None:
+            self.add_user(playlist.get_owner_id())
+        # Add playlist to the database
+        self.cursor.execute(
+            "INSERT INTO playlists (id_pkey,users_id_fkey,name,description,image_url,timestamp,is_managed) VALUES (:id,:owner_id,:name,:desc,:url,:timestamp,:is_managed)",
+            id=playlist.get_id(),
+            owner_id=playlist.get_owner_id(),
+            name=playlist.get_name(),
+            desc=playlist.get_description(),
+            url=playlist.get_image_url(),
+            timestamp=playlist.get_description(),
+            is_managed=playlist.is_managed()
+        )
+        # Add tracks to the playlist
+        for track in playlist.get_tracks():
+            self.add_track()
+            self.cursor.execute(
+                "INSERT INTO favorites (users_id_fkey,tracks_id_fkey) VALUES (:user_id,:track_id)",
+                user_id=playlist.get_owner_id(),
+                track_id=track.get_id()
+            )
+        self.connection.commit()
 
     def add_track(self, track: track.Track):
         # Check if track already exists
@@ -266,10 +311,30 @@ class OracleCon(interface.Interface):
                 )
         self.connection.commit()
 
-
     def add_user(self, user: user.User):
-        pass
-        
+        """Adds user to the database
+
+        Args:
+            user (user.User): Spotify user object
+        """
+        # Handle actual user object
+        if self.cursor.execute("SELECT * FROM users WHERE id_pkey = :id",id=user):
+            self.__update_user(user)
+            return
+        # Input new user object
+        self.cursor.execute(
+            "INSERT INTO users (id_pkey,display_name,image_url,api_token,expires_at,email,timestamp)"+
+            "VALUES (:id,:display_name,:image_url,:api_token,:expires_at,:email:,:timestamp)",
+            id=user.get_id(),
+            display_name=user.get_display_name(),
+            image_url=user.get_image_url(),
+            api_token=user.get_api_token(),
+            expires_at=user.get_expires_at(),
+            email=user.get_email(),
+            timestamp=user.get_timestamp()
+        )
+        self.connection.commit()
+
     # -- Update --
 
     def __update_album(self, album: album.Album):

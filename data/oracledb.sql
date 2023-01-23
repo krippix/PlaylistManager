@@ -4,7 +4,6 @@ CREATE TABLE USERS (
     image_url VARCHAR(200),
     api_token VARCHAR(32),
     expires_at NUMBER(20),
-    username VARCHAR(30) NOT NULL,
     email VARCHAR(256),
     timestamp NUMBER(20)
 );
@@ -15,6 +14,7 @@ CREATE TABLE PLAYLISTS (
     name NVARCHAR2(64) NOT NULL,
     description NVARCHAR2(300),
     image_url VARCHAR2(200),
+    is_managed NUMBER(1),
     timestamp NUMBER(20)
 );
 CREATE TABLE TRACKS(
