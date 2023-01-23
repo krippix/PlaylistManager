@@ -5,7 +5,7 @@ import time
 from Gustelfy.database import database
 from Gustelfy.objects import album, artist, playlist, track, user
 from Gustelfy.util import config
-
+from Gustelfy import session
 
 def test():
     """Testrun without flask"""
@@ -13,21 +13,23 @@ def test():
     
     ##testalbum = album.Album("amogus", "amogus", [track.Track("amo_gus", "name", [artist.Artist("i","i",12)])], [artist.Artist("i","i",12)])
 
-    # Check config for errors
+    # Initialise config object
     settings = config.Config()
-    settings.checkConfig()
     
     # Connect to database and fix table
-    logger.info("Establishing database connection.")
-    db = database.Database("sqlite3").get_db_connection()
-    db.check()
+    db = database.Database("oracledb").get_db_connection()
+
+    # Create spotify testuser
+    user = user.User("dennislessel")
 
     # Connect to spotify
     spotify = spotify_api.Spotify_api()
 
-    user_session = session.Session(spotify, db)
-    data = user_session.get_homepage_data()
-    user_session.commit_favorites_changes(data["changes"])
+    user_session = session.Session(user, spotify, db)
+    #data = user_session.get_homepage_data()
+    #user_session.commit_favorites_changes(data["changes"])
+
+    user_session.update_favorites()
 
 def db_connection():
     "pyhton -m Gustelfy db"
