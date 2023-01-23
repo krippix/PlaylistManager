@@ -31,6 +31,7 @@ class Config:
             self.config = configparser.ConfigParser()
             self.custom_files()
             self.ensureBaseFolders()
+            self.checkConfig()
             self._initialized = True
 
     # ---- Getter Functions ----
