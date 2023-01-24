@@ -32,10 +32,6 @@ class Interface(ABC):
         '''Returns list of songs withing the user'''
 
     @abstractmethod
-    def get_genres(self, artist_id: str) -> list[str]:
-        '''Returns list of genres associated with the given artist'''
-
-    @abstractmethod
     def get_playlist(self, id: str) -> playlist.Playlist | None:
         '''Returns playlist object or None if nothing was found.'''    
 
@@ -88,13 +84,23 @@ class Interface(ABC):
     # -- Update --
 
     @abstractmethod
-    def update_favorites(self, delta: tuple[list[track.Track], list[track.Track]]):
+    def update_favorites(self, user_id: str, delta: tuple[list[track.Track], list[track.Track]]):
         """Updates list of favorites with given input
 
         Args:
             delta (tuple[list[track.Track], list[track.Track]]): 0 - added tracks; 1 - removed tracks
         """
 
+    # -- Remove --
+
+    @abstractmethod
+    def remove_playlist(self, playlist_id: str):
+        pass
+
+    @abstractmethod
+    def remove_user(self, user_id: str):
+        pass
+    
     # -- Database integrity --
 
     @abstractmethod

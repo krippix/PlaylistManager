@@ -87,20 +87,133 @@ class OracleCon(interface.Interface):
             genre_list.append(genre[0])
         return genre_list
 
-    def get_favorites(self, user_id) -> list[track.Track]:
-        pass
+    def get_favorites(self, user_id: str) -> list[track.Track]:
+        """Returns list of favorites listed in the offline db
 
-    def get_genres(self, artist_id) -> list[str]:
-        pass
+        Args:
+            user_id (str): Spotify user ID
 
-    def get_playlist(self, id) -> playlist.Playlist:
-        pass
+        Returns:
+            list[track.Track]: List of favorites
+        """
+        result = self.cursor.execute("SELECT tracks_id_fkey FROM favorites WHERE users_id_fkey=:id",id=user_id).fetchall()
+        tracks = []
+        for id in result:
+            tracks.append(self.get_track(id[0]))
+        return tracks
 
-    def get_track(self, id: str) -> track.Track | None:
-        pass    
+    def get_playlist(self, id: str, user_id: str) -> playlist.Playlist:
+        """Returns a user playlist from local database
+
+        Args:
+            id (str): Spotify ID of the Playlist
+            user_id (str): Spotify ID of the user using the playlist
+
+        Returns:
+            playlist.Playlist: Spotify Playlist object
+        """
+        # Get Playlist data from db
+        db_playlist = self.cursor.execute(
+            "SELECT creator_id,name,description,image_url,timestamp FROM playlists WHERE id_pkey=:id AND users_id_fkey=:user_id",
+            id=id,
+            user_id=user_id
+        ).fetchall()
+        if not db_playlist:
+            return None
+        # Get managed status for the playlist
+        status = self.cursor.execute("SELECT is_managed FROM user_playlists WHERE playlists_id_fkey=:id AND users_id_fkey=:user_id",id=id, user_id=user_id).fetchall()
+        # Get Playlist tracks from db
+        db_tracks = self.cursor.execute(
+            "SELECT tracks_id_pkey FROM playlist_content WHERE playlists_id_fkey=:id",
+            id=id
+        ).fetchall()
+        tracks = []
+        for track in db_tracks:
+            tracks.append(get_track(track[0]))
+        # Get Playlist genres from db
+        genres = []
+        db_genres = self.cursor.execute("SELECT genres_id_fkey FROM playlist_genres WHERE playlists_id_fkey=:id",id=id).fetchall()
+        for genre in db_genres:
+            genres.append(genre[0])
+        # Create Playlist object
+        playlist_result = playlist.Playlist(
+            id=id,
+            name=db_playlist[0][1],
+            user_id=user_id,
+            creator_id=db_playlist[0][0],
+            tracks=tracks,
+            managed=status[0][0],
+            timestamp=db_playlist[0][4],
+            description=db_playlist[0][2],
+            image_url=db_playlist[0][3],
+            genres=genres
+        )
+        return playlist_result
+
+    def get_track(self, id: str) -> track.Track:
+        """Returns Spotify Track object with its artists
+
+        Args:
+            id (str): Spotify ID of the track
+
+        Returns:
+            track.Track: Spotify Track object
+        """
+        # Get track from the database
+        track_result = self.cursor.execute(
+            "SELECT name,duration_ms,disc_number,explicit,timestamp FROM tracks WHERE id_pkey=:id",
+            id=id
+        ).fetchall()
+        if not track_result:
+            return None
+        # Retrieve artists associated with this track
+        artists_result = self.cursor.execute(
+            "SELECT artists_id_fkey FROM track_artists WHERE tracks_id_fkey=:id",
+            id=id
+        ).fetchall()
+        artists = []
+        for artist_id in artists_result:
+            artists.append(self.get_artist(artist_id[0]))
+        # Create track object to return
+        result = track.Track(
+            id=id,
+            name=track_result[0][0],
+            artists=artists,
+            timestamp=track_result[0][4],
+            duration_ms=track_result[0][1],
+            disc_number=track_result[0][2],
+            explicit=track_result[0][3]
+        )
+        return result
+        
 
     def get_user(self, id: str) -> user.User | None:
-        pass
+        """Returns Spotify user from database, None if they dont exist
+
+        Args:
+            id (str): Spotify ID
+
+        Returns:
+            user.User | None: Spotify user object
+        """
+        # Pull user from database
+        db_result = self.cursor.execute(
+            "SELECT display_name,image_url,api_token,expires_at,email,timestamp FROM users WHERE id_pkey=:id",
+            id=id
+        ).fetchall()
+        if not db_result:
+            return None
+        user = user.User(
+            id=id,
+            display_name=db_result[0][0],
+            email=db_result[0][4],
+            expires_at=db_result[0][3],
+            api_token=db_result[0][2],
+            image_url=db_result[0][1],
+            timestamp=db_result[0][5]
+        )
+        return user
+
 
     # ---- Setter Functions ----
 
@@ -201,14 +314,14 @@ class OracleCon(interface.Interface):
         Args:
             artist (artist.Artist): Spotify Artist object
         """
-        # Ensure genres exist in the database
-        for genre in artist.get_genres():
-            self.add_genre(genre)
-
         # Check if artist is already in the database
-        if self.get_artist is not None:
+        if self.get_artist(artist.get_id()) is not None:
             self.__update_artist(artist)
             return
+        
+        # Get artists genres
+        for genre in artist.get_genres():
+            self.add_genre(genre)
         
         # Write artist into the database
         self.cursor.execute(
@@ -256,38 +369,43 @@ class OracleCon(interface.Interface):
             playlist (playlist.Playlist): Playlist to save locally
         """
         # Check if playlist already exists
-        if self.get_playlist(playlist.get_id()) is not None:
+        if self.get_playlist(playlist.get_id(),playlist.get_user_id()) is not None:
             self.__update_playlist(playlist)
             return
-        # Check if user exists
-        if self.get_user is None:
-            self.add_user(playlist.get_owner_id())
         # Add playlist to the database
         self.cursor.execute(
-            "INSERT INTO playlists (id_pkey,users_id_fkey,name,description,image_url,timestamp,is_managed) VALUES (:id,:owner_id,:name,:desc,:url,:timestamp,:is_managed)",
+            "INSERT INTO playlists (id_pkey,users_id_fkey,creator_id,name,description,image_url,timestamp) VALUES (:id,:user_id,:creator_id,:name,:desc,:url,:timestamp)",
             id=playlist.get_id(),
-            owner_id=playlist.get_owner_id(),
+            user_id=playlist.get_user_id(),
+            creator_id=playlist.get_creator_id(),
             name=playlist.get_name(),
             desc=playlist.get_description(),
             url=playlist.get_image_url(),
             timestamp=playlist.get_description(),
+        )
+        # Add user association
+        self.cursor.execute(
+            "INSERT INTO user_playlists (playlists_id_fkey,users_id_fkey,is_managed) VALUES (:id,:user_id,:managed)",
+            id=playlist.get_id(),
+            user_id=playlist.get_user_id(),
             is_managed=playlist.is_managed()
         )
         # Add tracks to the playlist
         for track in playlist.get_tracks():
             self.add_track()
             self.cursor.execute(
-                "INSERT INTO favorites (users_id_fkey,tracks_id_fkey) VALUES (:user_id,:track_id)",
-                user_id=playlist.get_owner_id(),
+                "INSERT INTO playlist_content (playlists_id_fkey,tracks_id_fkey) VALUES (:id,:track_id)",
+                id=playlist.get_id(),
                 track_id=track.get_id()
             )
         self.connection.commit()
+        return
 
     def add_track(self, track: track.Track):
         # Check if track already exists
-        if self.cursor.execute("SELECT (id_pkey) FROM tracks WHERE id_pkey=:id_pkey",id_pkey=track.get_id()):
-            #update track
-            pass
+        if self.cursor.execute("SELECT (id_pkey) FROM tracks WHERE id_pkey=:id_pkey",id_pkey=track.get_id()).fetchall():
+            self.__update_track(track)
+            return
         else:
             self.cursor.execute(
                 "INSERT INTO tracks (id_pkey,name,duration_ms,disc_number,explicit,timestamp) VALUES (:id_pkey,:name,:duration_ms,:disc_number,:explicit,:timestamp)",
@@ -299,7 +417,7 @@ class OracleCon(interface.Interface):
                 timestamp=track.get_timestamp()
             )
         for artist in track.get_artists():
-            add_artist(artist)
+            self.add_artist(artist)
             # Check if artist <-> track relation already exists
             if self.cursor.execute("SELECT * from track_artists WHERE tracks_id_fkey=:track_id AND artists_id_fkey=:artist_id",track_id=track.get_id(),artist_id=artist.get_id()):
                 continue
@@ -310,6 +428,7 @@ class OracleCon(interface.Interface):
                     track_id=track.get_id()
                 )
         self.connection.commit()
+        return
 
     def add_user(self, user: user.User):
         """Adds user to the database
@@ -318,22 +437,23 @@ class OracleCon(interface.Interface):
             user (user.User): Spotify user object
         """
         # Handle actual user object
-        if self.cursor.execute("SELECT * FROM users WHERE id_pkey = :id",id=user):
+        if self.cursor.execute("SELECT * FROM users WHERE id_pkey = :id",id=user.get_id()).fetchall():
             self.__update_user(user)
             return
         # Input new user object
         self.cursor.execute(
-            "INSERT INTO users (id_pkey,display_name,image_url,api_token,expires_at,email,timestamp)"+
-            "VALUES (:id,:display_name,:image_url,:api_token,:expires_at,:email:,:timestamp)",
-            id=user.get_id(),
+            "INSERT INTO users (id_pkey,display_name,image_url,api_token,expires_at,email,timestamp) "+
+            "VALUES (:user_id,:display_name,:image_url,:api_token,:expr,:mail,:wurzel)",
+            user_id=user.get_id(),
             display_name=user.get_display_name(),
             image_url=user.get_image_url(),
             api_token=user.get_api_token(),
-            expires_at=user.get_expires_at(),
-            email=user.get_email(),
-            timestamp=user.get_timestamp()
+            expr=user.get_expires_at(),
+            mail=user.get_email(),
+            wurzel=user.get_timestamp()
         )
         self.connection.commit()
+        return
 
     # -- Update --
 
@@ -349,11 +469,12 @@ class OracleCon(interface.Interface):
             self.cursor.execute("DELETE FROM albums WHERE id_pkey=:id",id=album.get_id())
             self.conection.commit()
             self.add_album(album)
+        return
         
 
     def __update_artist(self, artist: artist.Artist):
         self.cursor.execute(
-            "UPDATE artists SET id_pkey=:id_pkey,name=:name,image_url=:image_url,timestamp=:timestamp",
+            "UPDATE artists SET name=:name,image_url=:image_url,timestamp=:timestamp WHERE id_pkey=:id_pkey",
             id_pkey=artist.get_id(),
             name=artist.get_name(),
             image_url=artist.get_image_url(),
@@ -361,15 +482,136 @@ class OracleCon(interface.Interface):
         )
         self.__set_artist_genres(artist)
         self.connection.commit()
+        return
 
     def __update_playlist(self, playlist: playlist.Playlist):
-        pass
+        """Updates existing playlist database entry
+
+        Args:
+            playlist (playlist.Playlist): Spotify Playlist object to update with
+        """
+        # Update timestamp if they are the same
+        if playlist == self.get_playlist(playlist.get_id()):
+            self.cursor.execute("UPDATE playlists SET timestamp=:timestamp",timestamp=playlist.get_timestamp())
+            self.connection.commit()
+            return
+        # Replace entire playlist
+        self.cursor.execute("DELETE FROM playlist_content WHERE playlists_id_fkey=:id",id=playlist.get_id())
+        self.cursor.execute("DELETE FROM playlists WHERE id_pkey=:id",id=playlist.get_id())
+        self.cursor.execute("DELETE FROM user_playlists WHERE users_id_fkey=:user_id AND playlists_id_fkey=:playlist_id",user_id=user_id,playlist_id=playlist.get_id())
+        self.cursor.execute(
+            "INSERT INTO PLAYLISTS (id_pkey,creator_id,name,description,image_url,timestamp) "+
+            "VALUES (:id,:user_id,:name,:desc,:url,:timestamp)",
+            id=playlist.get_id(),
+            user_id=playlist.get_creator_id(),
+            name=playlist.get_name(),
+            desc=playlist.get_description(),
+            url=playlist.get_image_url(),
+            timestamp=playlist.get_timestamp()
+        )
+        for track in playlist.get_tracks:
+            self.cursor.execute(
+                "INSERT INTO playlist_content (playlists_id_fkey,tracks_id_fkey) "+
+                "VALUES (:playlist_id,:track_id)",
+                playlist_id=playlist.get_id(),
+                track_id=track.get_id()
+                )
+        self.cursor.execute(
+            "INSERT INTO user_playlists (users_id_fkey,playlists_id_fkey,is_managed) VALUES (:user_id,:playlist_id,:managed)",
+            user_id=user_id,
+            playlist_id=playlist.get_id(),
+            managed=playlist.is_managed()
+            )
+        self.connection.commit()
+        return
 
     def __update_track(self, track: track.Track):
-        pass
+        db_track = self.get_track(track.get_id())
+        # Update timestamp if same
+        if db_track == track:
+            self.cursor.execute("UPDATE tracks SET timestamp=:time WHERE id_pkey=:id",time=track.get_timestamp(),id=track.get_id())
+            self.connection.commit()
+            return
+        for art in track.get_artists():
+            self.add_artist(art)
+        # Update entire entry otherwise
+        self.cursor.execute(
+            "UPDATE tracks SET name=:name,duration_ms=:duration_ms,disc_number=:disc_number,explicit=:explicit,timestamp=timestamp",
+            name=track.get_name(),
+            duration_ms=track.get_duration(),
+            disc_number=track.get_disc_number(),
+            explicit=track.is_explicit()
+        )
+        # Update artist connections
+        self.cursor.execute("DELETE FROM track_artists WHERE tracks_id_fkey=:id",id=track.get_id())
+        for artist in track.get_artists():
+            self.cursor.execute(
+                "INSERT INTO track_artists (tracks_id_fkey,artists_id_fkey) "+
+                "VALUES (:track_id,:artist_id)",
+                track_id=track.get_id(),
+                artist_id=artist.get_id()
+            )
+        self.connection.commit()
+        return
 
-    def update_favorites(self, delta: tuple[list[track.Track], list[track.Track]]):
-        pass
+    def update_favorites(self, user_id: str, delta: tuple[list[track.Track], list[track.Track]]):
+        """Update favorites of user, database content is expected to be known! so no error handling!
+
+        Args:
+            delta (tuple[list[track.Track], list[track.Track]]): (added,removed)
+        """
+        for removed_track in delta[1]:
+            self.cursor.execute(
+                "DELETE FROM favorites WHERE tracks_id_fkey=:track_id AND users_id_fkey=:user_id",
+                track_id=removed_track.get_id(),
+                user_id=user_id
+            )
+        for added_track in delta[0]:
+            self.cursor.execute(
+                "INSERT INTO favorites (tracks_id_fkey,users_id_fkey) VALUES (:track_id,:user_id)",
+                track_id=added_track.get_id(),
+                user_id=user_id
+            )
+        self.connection.commit()
+        return
+
+    def __update_user(self, user: user.User):
+        self.cursor.execute(
+            "UPDATE users SET display_name=:display_name,image_url=:image_url,api_token=:api_token,expires_at=:expires_at,email=:email,timestamp=:timestamp",
+            display_name=user.get_display_name(),
+            image_url=user.get_image_url(),
+            api_token=user.get_api_token(),
+            expires_at=user.get_expires_at(),
+            email=user.get_email(),
+            timestamp=user.get_timestamp()
+        )
+        self.connection.commit()
+        return
+
+    # -- Remove --
+
+    def remove_playlist(self, playlist: playlist.Playlist):
+        """Deletes user's playlist from database
+
+        Args:
+            playlist_id (playlist.Playlist): Spotify Playlist object
+        """
+        self.cursor.execute("DELETE FROM user_playlists WHERE users_id_fkey=:user_id AND playlists_id_fkey=:",user_id=playlist.get_user_id(),id=playlist_id)
+        self.connection.commit()
+        # If playlist no longer in use, remove from database
+        if not self.cursor.execute("SELECT * FROM user_playlists WHERE playlists_id_fkey=:id",id=playlist.get_id()).fetchall():
+            self.cursor.execute("DELETE FROM playlist_content WHERE playlists_id_fkey=:id",id=playlist.get_id())
+            self.cursor.execute("DELETE FROM playlist_genres WHERE playlists_id_fkey=:id",id=playlist.get_id())
+            self.cursor.execute("DELETE FROM playlists WHERE id_pkey=:id",id=playlist.get_id())
+        self.connection.commit()
+        return
+
+    def remove_user(self, user_id: str):
+        self.cursor.execute("DELETE FROM user_playlists WHERE users_id_fkey=:id",id=user_id)
+        self.cursor.execute("DELETE FROM favorites WHERE users_id_fkey=:id",id=user_id)
+        self.cursor.execute("DELETE FROM users WHERE id_pkey=:id",id=user_id)
+        self.connection.commit()
+        return
 
     # -- Database integrity --
 

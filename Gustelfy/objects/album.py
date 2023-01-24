@@ -61,6 +61,8 @@ class Album(spotifyObject.SpotifyObject):
         Returns:
             bool: whether or not they are equal
         """
+        if other is None:
+            return False
         if other.get_id() != self.get_id():
             return False
         if other.get_name() != self.get_name():

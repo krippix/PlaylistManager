@@ -13,6 +13,7 @@ class Database():
 
     # Constructor: Check if input type exists, defaults to sqlite3, returns db-connection
     def __init__(self, connection="sqlite3"):
+        logger = logging.getLogger(__name__)
         # define available databases, and assign their caller
         db_types = {
             "sqlite3": self.sqlite3,
