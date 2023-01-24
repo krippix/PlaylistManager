@@ -15,13 +15,22 @@ class Track(spotifyObject.SpotifyObject):
     disc_number: int
     explicit: bool
     
-    def __init__(self, id: str, name: str, artists: list[artist.Artist], timestamp=int(time.time())):
+    def __init__(self,
+                id: str,
+                name: str,
+                artists=list[artist.Artist],
+                timestamp=int(time.time()),
+                duration_ms=0,
+                disc_number=1,
+                explicit=0
+                ):
         self.set_id(id)
         self.set_name(name)
         self.set_timestamp(timestamp)
-        
-        if artists is not None:
-            self.set_artists(artists)
+        self.set_artists(artists)
+        self.set_duration(duration_ms)
+        self.set_disc_number(disc_number)
+        self.set_explicit(explicit)        
 
     # ---- Getter Functions ----
 
@@ -88,7 +97,8 @@ class Track(spotifyObject.SpotifyObject):
         Returns:
             bool: whether or not the objects are considered equal
         """
-
+        if other is None:
+            return False
         if self.get_id() != other.get_id():
             return False
         if self.name != other.name:

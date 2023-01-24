@@ -7,25 +7,57 @@ from Gustelfy.objects import track
 
 class Playlist(spotifyObject.SpotifyObject):
     
-    owner_id: str
+    creator_id: str
     managed: bool
     tracks = []
     description: str
     image_url: str
+    genres: list[str]
     
-    def __init__(self, id: str, name: str, owner_id: str, tracks=[], managed=False, timestamp=int(time.time())):
+    def __init__(self, 
+                id: str, 
+                name: str,
+                user_id: str,
+                creator_id: str,
+                tracks=[],
+                managed=0,
+                timestamp=int(time.time()),
+                description="",
+                image_url="",
+                genres=[]
+                ):
+        """Creates a Spotify Playlist object
+
+        Args:
+            id (str): Spotify ID of the Playlist
+            name (str): Playlist (display) name
+            user_id (str): Spotify ID of the user following the playlist in this context
+            creator_id (str): Spotify ID of the Playlist creator
+            tracks (list, optional): tracks within the playlist. Defaults to [].
+            managed (int, optional): Whether or not the playlist will be managed by this software. Defaults to 0.
+            timestamp (int, optional): timestamp integer. Defaults to int(time.time()).
+            image_url (str, optional): Playlist image url. Defaults to "".
+            genres (list, optional): List of genres to be auto-included. Defaults to [].
+        """
         self.set_id(id)
         self.set_name(name)
         self.set_timestamp(timestamp)
 
-        self.set_owner_id(owner_id)
+        self.set_user_id(user_id)
+        self.set_creator_id(creator_id)
         self.set_tracks(tracks)
         self.set_managed(managed)
+        self.set_description(description)
+        self.set_image_url(image_url)
+        self.set_genres(genres)
 
     # ---- Getter Functions ----
 
-    def get_owner_id() -> str:
-        return self.owner_id
+    def get_user_id() -> str:
+        return self.user_id
+
+    def get_creator_id() -> str:
+        return self.creator_id
 
     def is_managed() -> bool:
         if self.managed:
@@ -42,10 +74,16 @@ class Playlist(spotifyObject.SpotifyObject):
     def get_image_url() -> str:
         return self.image_url
 
+    def get_genres() -> list[str]:
+        return self.genres
+
     # ---- Setter Functions ----
 
-    def set_owner_id(self, owner_id: str):
-        self.owner_id = owner_id
+    def set_user_id(self, user_id: str):
+        self.user_id = user_id
+
+    def set_creator_id(self, creator_id: str):
+        self.creator_id = creator_id
 
     def set_tracks(self, tracks: list[track.Track]):
         self.tracks = tracks
@@ -58,6 +96,9 @@ class Playlist(spotifyObject.SpotifyObject):
 
     def set_image_url(self, url: str):
         self.image_url = url
+    
+    def set_genres(self, genres: list[str]):
+        self.genres = genres
 
     # ---- Other Functions ----
 
@@ -70,11 +111,13 @@ class Playlist(spotifyObject.SpotifyObject):
         Returns:
             bool: whether or not they are equal
         """
+        if other is None:
+            return False
         if self.get_id() != other.get_id():
             return False
         if self.get_name() != other.get_name():
             return False
-        if self.get_owner_id() != other.get_owner_id():
+        if self.get_creator_id() != other.get_creator_id():
             return False
         if self.is_managed() != other.is_managed():
             return False

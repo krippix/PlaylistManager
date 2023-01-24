@@ -23,6 +23,8 @@ class Session:
         self.logger = logging.getLogger(f"{__name__}:{user.get_id()}")
         self.logger.info("Initialized session.")
 
+        self.db_con.add_user(self.user)
+
     # ---- Getter Functions ----
 
     def get_homepage_data(self) -> dict:
@@ -48,7 +50,7 @@ class Session:
         '''Returns tuple of list of changed tracks in favorites: (added,removed)'''
         self.logger.debug("get_favorites_changes()")
 
-        local_lib = self.db_con.get_favorites(self.user_id)
+        local_lib = self.db_con.get_favorites(self.user.get_id())
         online_lib = self.spotify.fetch_favorites()
 
         # Creates list of songs that exist in both local and online favorites
@@ -117,7 +119,7 @@ class Session:
 
         for track in favorites:
             self.add_track(track)
-        self.db_con.update_favorites(self.user_id, changes)
+        self.db_con.update_favorites(self.user.get_id(), changes)
 
     # -- update --
 
