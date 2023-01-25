@@ -11,10 +11,20 @@ class Album(spotifyObject.SpotifyObject):
 
     artists: list[artist.Artist]
     tracks: list[track.Track]
-    image_url: str
+    images: list[tuple(int,str,int)]
     release_date: str
+    total_tracks: int
 
-    def __init__(self, id: str, name: str, tracks: list[track.Track], artists: list[artist.Artist], timestamp=int(time.time())):
+    def __init__(self,
+                id: str,
+                name: str,
+                artists: list[artist.Artist],
+                tracks=[],
+                images=[],
+                release_date="0000-00-00",
+                total_tracks=0,
+                timestamp=int(time.time())
+                ):
         self.set_id(id)
         self.set_name(name)
         self.set_timestamp(timestamp)
@@ -24,17 +34,20 @@ class Album(spotifyObject.SpotifyObject):
 
     # ---- Getter Functions ----
 
-    def get_artists() -> list[artist.Artist]:
+    def get_artists(self) -> list[artist.Artist]:
         return self.artists
 
-    def get_tracks() -> list[track.Track]:
+    def get_tracks(self) -> list[track.Track]:
         return self.tracks
 
-    def get_image_url() -> str:
+    def get_image_url(self) -> str:
         return self.image_url
 
-    def get_release_date() -> str:
+    def get_release_date(self) -> str:
         return self.release_date
+
+    def get_total_tracks(self) -> int:
+        return self.total_tracks
 
     # ---- Setter Functions ----
     
@@ -44,11 +57,19 @@ class Album(spotifyObject.SpotifyObject):
     def set_artists(self, artists: list[artist.Artist]):
         self.aritsts = artists
 
-    def set_image_url(self, url: str):
-        self.image_url = url
+    def set_imaged(self, images):
+        """Set list of image tuples
+
+        Args:
+            images (list[tuple(int,str,int)]): (height,url,width)
+        """
+        self.image_url = images
 
     def set_release_date(self, date: str):
         self.release_date = date
+
+    def set_total_tracks(self, total_tracks: int):
+        self.total_tracks = total_tracks
 
     # ---- Other Functions ----
 

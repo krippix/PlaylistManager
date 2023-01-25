@@ -31,6 +31,22 @@ def test():
 
     user_session.commit_favorites_changes(user_session.get_favorites_changes())
 
+def api():
+    logger = logging.getLogger(__name__)
+    settings = config.Config()
+    spotify = spotify_api.Spotify_api()
+    result = {}
+    
+    try:
+        # Turbo thomas: 2vWnOXI1ALzlvNTdjVPMG1
+        # Rap über hass: 21ownMQ51Jqlv8si9CTI6R
+        result = spotify.fetch_track('21ownMQ51Jqlv8si9CTI6R')
+    except Exception as e:
+        print(e)
+        print("sugoma")
+    print(result)
+
+
 def db_connection():
     "pyhton -m Gustelfy db"
     db = database.Database("oracledb").get_db_connection()
