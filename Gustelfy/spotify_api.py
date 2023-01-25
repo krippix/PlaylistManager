@@ -165,7 +165,8 @@ class Spotify_api:
             return None
         if json:
             return result
-        print(result)
+        # Get tracks
+        return self.spotify.playlist_tracks(playlist_id)
 
     def fetch_track(self, track_id: str) -> track.Track:
         """Fetches detailed track information from Spotify database, rudimentary artist and album information.
