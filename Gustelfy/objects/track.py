@@ -3,7 +3,7 @@
 import time
 # project
 from Gustelfy.objects import spotifyObject
-from Gustelfy.objects import artist
+from Gustelfy.objects import artist, album
 
 
 class Track(spotifyObject.SpotifyObject):
@@ -12,17 +12,23 @@ class Track(spotifyObject.SpotifyObject):
 
     artists = []
     duration: int
+    album: str
     disc_number: int
+    track_number: int
     explicit: bool
+    popularity: int
     
     def __init__(self,
                 id: str,
                 name: str,
-                artists=list[artist.Artist],
+                artists: list[artist.Artist],
                 timestamp=int(time.time()),
-                duration_ms=0,
-                disc_number=1,
-                explicit=0
+                duration_ms=None,
+                album=None,
+                disc_number=None,
+                track_number=None,
+                explicit=None,
+                popularity=None,
                 ):
         self.set_id(id)
         self.set_name(name)
@@ -30,6 +36,7 @@ class Track(spotifyObject.SpotifyObject):
         self.set_artists(artists)
         self.set_duration(duration_ms)
         self.set_disc_number(disc_number)
+        self.set_track_number(track_number)
         self.set_explicit(explicit)        
 
     # ---- Getter Functions ----
@@ -50,6 +57,9 @@ class Track(spotifyObject.SpotifyObject):
         """
         return self.duration
 
+    def get_album(self) -> album.Album:
+        return self.album
+
     def get_disc_number(self) -> int:
         return self.disc_number
 
@@ -63,6 +73,9 @@ class Track(spotifyObject.SpotifyObject):
             return 1
         else:
             return 0
+    
+    def get_popularity(self) -> int:
+        return self.popularity
 
     # ---- Setter Functions ----
    
@@ -80,11 +93,17 @@ class Track(spotifyObject.SpotifyObject):
         """
         self.duration = duration
 
+    def set_album(self, album: album.Album):
+        self.album_id = album_id
+
     def set_disc_number(self, number: int):
         self.disc_number = number
 
     def set_explicit(self, explicit: bool):
         self.explicit = explicit
+
+    def set_popularity(self, popularity: int):
+        self.popularity = popularity
 
     # ---- Other Functions ----
 

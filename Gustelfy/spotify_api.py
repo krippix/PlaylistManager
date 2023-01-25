@@ -5,7 +5,7 @@ import logging
 import time
 # project
 from Gustelfy.util import config
-from Gustelfy.objects import *
+from Gustelfy.objects import album, artist, playlist, track, user
 
 
 class Spotify_api:
@@ -27,7 +27,7 @@ class Spotify_api:
 
     def __init__(self):
         # fetch credentials from config.ini
-        self.logger = logging.getLogger("Gustelfy.spotify_api")
+        self.logger = logging.getLogger(__name__)
         self.settings = config.Config()
         self.client_id = self.settings.get_config("AUTH","client_id")
         self.client_secret = self.settings.get_config("AUTH","client_secret")
@@ -61,10 +61,7 @@ class Spotify_api:
             self.logger.info("Exiting software.")
             exit()
 
-
-    ############
-    # get
-    ############
+    # ---- Getter Functions ----
 
     def get_connection(self) -> spotipy.Spotify:
         '''Returns spotify API connection object.'''
@@ -80,23 +77,59 @@ class Spotify_api:
         '''returns current user's display name.'''
         return self.spotify.current_user()["display_name"]
     
+    # ---- Setter Functions ----
 
-    def fetch_track(self, track_id: str):
-        '''Pulls track from spotify api by id. Including rudimentary artist information'''
-        self.logger.debug(f"fetch_track({track})")
-               
-        result = self.spotify.track(track_id=track_id)
+    # ---- Other Functions ----
 
-        if result is None:
-            # TODO might need error handling here
-            self.logger.error("Track not found in spotify db.")
+    # -- Fetch --
+
+    def fetch_track(self, track_id: str) -> track.Track:
+        """Fetches detailed track information from Spotify database, rudimentary artist and album information.
+
+        Args:
+            track_id (str): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        self.logger.debug(f"fetch_track({track_id})")
+        
+        try:
+            result = self.spotify.track(track_id=track_id)
+        except Exception as e:
+            logging.error(f"Track with id '{track_id}' not found.\n{e}")
             return None
 
         # add artists ids into list
         artists = []
         for curr_artist in result["artists"]:
-            artists.append(artist.Artist(id=curr_artist["id"], name=curr_artist["name"], timestamp=int(time.time())))
+            artists.append(artist.Artist(id=curr_artist["id"], name=curr_artist["name"]))
 
+        # Album
+        # Album artists
+        album_artists = []
+        for album_artist in result["album"]["artists"]:
+            album_artists.append(artist.Artist(id=album_artist["id"],name=album_artist["name"]))
+
+        # Build album to append
+        tr_album = album.Album(
+            id=result["album"]["id"],
+            name=result["album"]["name"],
+            artists=artists,
+            total_tracks=result["album"]["total_tracks"],
+        )
+        result_track = track.Track(
+            id=track_id,
+            name=result["name"],
+            artists=artists,
+            duration_ms=result["duration_ms"],
+            album=tr_album,
+            disc_number=result["disc_number"],
+            tracK_number=result["track_number"],
+            explicit=result["explicit"],
+            popularity=result["popularity"]
+        )
+        
         return track.Track(id=track_id, name=result["name"], artists=artists, timestamp=int(time.time()))
     
 

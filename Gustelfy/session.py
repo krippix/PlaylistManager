@@ -25,6 +25,19 @@ class Session:
 
         self.db_con.add_user(self.user)
 
+    # ---- TEMPORARY ASSIGNMENT FUNCTIONS ----
+    # Used for my class project, will be removed together with the oracle db connection
+    def fill_db(self):
+        # The following have to be satisfied:
+        # - favorites -> starting point
+        # - album -> from all tracks that exist
+        # - artist -> also from existing tracks and albums
+        # - playlist -> from user
+        # - track -> pulled from the other objects
+        # - user -> done before using session (hopefully)
+        
+        pass
+    
     # ---- Getter Functions ----
 
     def get_homepage_data(self) -> dict:
