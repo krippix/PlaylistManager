@@ -10,14 +10,18 @@ class Artist(spotifyObject.SpotifyObject):
 
     name: str
     genres: list[str]
-    image_url: str
+    images: list[tuple()]
+    popularity: int
+    followers: int
     
     def __init__(self,
                 id: str,
                 name: str,
                 genres=[],
                 timestamp=int(time.time()),
-                image_url="https://i.scdn.co/image/ab6775700000ee8555c25988a6ac314394d3fbf5"
+                images=[],
+                popularity=None,
+                followers=None
                 ):
         """Initialises new Artist object
 
@@ -33,23 +37,37 @@ class Artist(spotifyObject.SpotifyObject):
         self.set_timestamp(timestamp)
 
         self.set_genres(genres)
-        self.set_image_url(image_url)
+        self.set_images(images)
+        self.set_popularity(popularity)
+        self.set_followers(followers)
 
     # ---- Getter Functions ----
 
     def get_genres(self) -> list[str]:
         return self.genres
 
-    def get_image_url(self) -> str:
-        return self.image_url
+    def get_images(self) -> list[tuple()]:
+        return self.images
+
+    def get_popularity(self) -> int:
+        return self.popularity
+
+    def get_followers(self) -> int:
+        return self.followers
 
     # ---- Setter Functions ----
 
     def set_genres(self, genres: list[str]):
         self.genres = genres
 
-    def set_image_url(self, url: str):
-        self.image_url = url
+    def set_images(self, images: list[tuple()]):
+        self.images = images
+
+    def set_popularity(self, popularity: int):
+        self.popularity = popularity
+    
+    def set_followers(self, followers: int):
+        self.followers = followers
 
     # ---- Other Functions ----
 
