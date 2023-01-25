@@ -11,9 +11,10 @@ class Album(spotifyObject.SpotifyObject):
 
     artists: list[artist.Artist]
     tracks: list[track.Track]
-    images: list[tuple(int,str,int)]
+    images: list[tuple()]
     release_date: str
     total_tracks: int
+    popularity: int
 
     def __init__(self,
                 id: str,
@@ -21,9 +22,10 @@ class Album(spotifyObject.SpotifyObject):
                 artists: list[artist.Artist],
                 tracks=[],
                 images=[],
-                release_date="0000-00-00",
-                total_tracks=0,
-                timestamp=int(time.time())
+                release_date=None,
+                total_tracks=None,
+                timestamp=int(time.time()),
+                popularity=None
                 ):
         self.set_id(id)
         self.set_name(name)
@@ -31,6 +33,9 @@ class Album(spotifyObject.SpotifyObject):
 
         self.set_artists(artists)
         self.set_tracks(tracks)
+        self.set_images(images)
+        self.set_release_date(release_date)
+        self.set_total_tracks(total_tracks)
 
     # ---- Getter Functions ----
 
@@ -40,14 +45,17 @@ class Album(spotifyObject.SpotifyObject):
     def get_tracks(self) -> list[track.Track]:
         return self.tracks
 
-    def get_image_url(self) -> str:
-        return self.image_url
+    def get_images(self) -> str:
+        return self.images
 
     def get_release_date(self) -> str:
         return self.release_date
 
     def get_total_tracks(self) -> int:
         return self.total_tracks
+
+    def get_popularity(self) -> int:
+        return self.popularity
 
     # ---- Setter Functions ----
     
@@ -57,7 +65,7 @@ class Album(spotifyObject.SpotifyObject):
     def set_artists(self, artists: list[artist.Artist]):
         self.aritsts = artists
 
-    def set_imaged(self, images):
+    def set_images(self, images):
         """Set list of image tuples
 
         Args:
@@ -70,6 +78,9 @@ class Album(spotifyObject.SpotifyObject):
 
     def set_total_tracks(self, total_tracks: int):
         self.total_tracks = total_tracks
+
+    def set_popularity(self, popularity: int):
+        self.popularity = popularity
 
     # ---- Other Functions ----
 
