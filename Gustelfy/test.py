@@ -45,13 +45,7 @@ def api():
     result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH",json=True)
     with open('test.json', 'w') as amogus:
         json.dump(result,amogus,indent=3)
-
     result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH",json=False)
-    with open('test2.json', 'w') as amogus:
-        json.dump(result,amogus,indent=3)
-    #print(len(result["tracks"]["items"]))
-
-
 
 def db_connection():
     "pyhton -m Gustelfy db"
@@ -60,7 +54,7 @@ def db_connection():
     
     test_artist = artist.Artist(
         id="42069",
-        name="Arbasch Poposohn",
+        name="Arschbach Poposohn",
         genres=["wurst and roll","rap"]
     )
     test_artist.set_image_url("https://google.com/image/amogus.png")

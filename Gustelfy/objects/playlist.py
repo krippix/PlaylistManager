@@ -17,11 +17,11 @@ class Playlist(spotifyObject.SpotifyObject):
     def __init__(self, 
                 id: str, 
                 name: str,
-                user_id: str,
                 creator_id: str,
                 tracks=[],
                 managed=0,
                 timestamp=int(time.time()),
+                user_id=None,
                 description="",
                 image_url="",
                 genres=[]
@@ -53,28 +53,28 @@ class Playlist(spotifyObject.SpotifyObject):
 
     # ---- Getter Functions ----
 
-    def get_user_id() -> str:
+    def get_user_id(self) -> str:
         return self.user_id
 
-    def get_creator_id() -> str:
+    def get_creator_id(self) -> str:
         return self.creator_id
 
-    def is_managed() -> bool:
+    def is_managed(self) -> bool:
         if self.managed:
             return 1
         else:
             return 0
 
-    def get_tracks() -> list[track.Track]:
+    def get_tracks(self) -> list[track.Track]:
         return self.tracks
 
-    def get_description() -> str:
+    def get_description(self) -> str:
         return self.description
 
-    def get_image_url() -> str:
+    def get_image_url(self) -> str:
         return self.image_url
 
-    def get_genres() -> list[str]:
+    def get_genres(self) -> list[str]:
         return self.genres
 
     # ---- Setter Functions ----
