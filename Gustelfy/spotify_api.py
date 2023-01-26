@@ -165,8 +165,55 @@ class Spotify_api:
             return None
         if json:
             return result
-        # Get tracks
-        return self.spotify.playlist_tracks(playlist_id)
+        # Get tracks seperately, because they contain more details that way
+        playlist_tracks = self.__fetch_playlist_tracks(playlist_id)
+        
+        playlist_result = playlist.Playlist(
+            id=playlist_id,
+            name=result["name"],
+            creator_id=result["owner"]["id"],
+            tracks=playlist_tracks,
+            description=result["description"],
+            image_url=result["images"][0]["url"],
+        )
+        return playlist_result
+
+    def __fetch_playlist_tracks(self, playlist_id: str) -> list[track.Track]:
+        result = self.spotify.playlist_tracks(playlist_id)
+        track_list = []
+        for item in result["items"]:
+            # Get track artists
+            track_artists = []
+            for art in item["track"]["artists"]:
+                track_artists.append(artist.Artist(
+                    id=art["id"],
+                    name=art["name"]
+                ))
+            # Get album artists
+            album_artists = []
+            for art in item["track"]["album"]["artists"]:
+                album_artists.append(artist.Artist(
+                    id=art["id"],
+                    name=art["name"]
+                ))
+            # Get track album
+            track_album = album.Album(
+                id=item["track"]["album"]["id"],
+                name=item["track"]["album"]["name"],
+                artists=album_artists
+            )
+            track_list.append(track.Track(
+                id=item["track"]["id"],
+                name=item["track"]["name"],
+                artists=track_artists,
+                duration_ms=item["track"]["duration_ms"],
+                album=track_album,
+                disc_number=item["track"]["disc_number"],
+                track_number=item["track"]["track_number"],
+                explicit=item["track"]["explicit"],
+                popularity=item["track"]["popularity"]
+            ))
+        return track_list
 
     def fetch_track(self, track_id: str) -> track.Track:
         """Fetches detailed track information from Spotify database, rudimentary artist and album information.
