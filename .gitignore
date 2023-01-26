@@ -4,6 +4,9 @@ __pycache__/
 *$py.class
 .vscode/
 
+# Amogus
+test*.json
+
 # configuration / database
 *.ini
 *.db
