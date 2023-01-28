@@ -36,6 +36,7 @@ class Album(spotifyObject.SpotifyObject):
         self.set_images(images)
         self.set_release_date(release_date)
         self.set_total_tracks(total_tracks)
+        self.set_popularity(popularity)
 
     # ---- Getter Functions ----
 
@@ -124,3 +125,72 @@ class Album(spotifyObject.SpotifyObject):
             if not subresult:
                 return False
         return True
+    
+    def merge(self, other: 'Album') -> 'Album':
+        """Merges other Album object into this one
+
+        Args:
+            other (Album): Album to merge into this object
+
+        Returns:
+            self: _description_
+        """
+        # Check if wrong input
+        if not isinstance(other, Album):
+            raise TypeError()
+        if self.get_id() == other.get_id():
+            self.logger.error("Cannot merge different Album objects.")
+            return
+        # Decide who is newer
+        if self.get_timestamp() < other.get_timestamp():
+            new = other
+            old = self
+        else:
+            new = self
+            old = other
+        # name
+        if new.get_name() != old.get_name():
+            self.set_name(new.get_name())
+        # timestamp
+        self.set_timestamp(new.get_timestamp())
+        # artists
+        artist_overlap = [n_art.merge(o_art) for n_art in new.get_artists() for o_art in old.get_artists() if o_art.get_id() == n_art.get_id()]
+        for n_art in new.get_artists():
+            match = False
+            for art in artist_overlap:
+                if n_art.get_id() == art.get_id():
+                    match = True
+            if not match:
+                artist_overlap.append(n_art)
+        self.set_artists(artist_overlap)
+        # tracks
+        track_overlap = [n_track.merge(o_track) for n_track in new.get_tracks() for o_track in old.get_tracks() if o_track.get_id() == n_track.get_id()]
+        for n_track in new.get_tracks():
+            match = False
+            for trk in track_overlap:
+                if n_track.get_id() == trk.get_id():
+                    match = True
+            if not match:
+                track_overlap.append(n_track)
+        self.set_tracks(track_overlap)
+        # images
+        if len(new.get_images()) == 0:
+            self.set_tracks(old.get_images())
+        else:
+            self.set_tracks(new.get_images())
+        # release_date
+        if new.get_release_date() is None:
+            self.set_release_date(old.get_release_date())
+        else:
+            self.set_release_date(new.get_release_date())
+        # total_tracks
+        if new.get_total_tracks() is None:
+            self.set_total_tracks(old.get_total_tracks())
+        else:
+            self.set_total_tracks(new.get_total_tracks())
+        # popularity
+        if new.get_popularity() is None:
+            self.set_popularity(old.get_popularity())
+        else:
+            self.set_popularity(new.get_popularity())
+        return self
