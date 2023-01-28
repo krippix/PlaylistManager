@@ -9,10 +9,11 @@ CREATE TABLE USERS (
 );
 CREATE TABLE PLAYLISTS (
     id_pkey VARCHAR(22),
-    creator_id VARCHAR(22) NOT NULL,
+    owner_id VARCHAR(22) NOT NULL,
     name NVARCHAR2(64) NOT NULL,
     description NVARCHAR2(300),
     image_url VARCHAR2(200),
+    managed NUMBER(1),
     timestamp NUMBER(20),
     PRIMARY KEY (id_pkey)
 );
@@ -22,6 +23,7 @@ CREATE TABLE TRACKS(
     duration_ms NUMBER(7),
     disc_number NUMBER(2),
     explicit NUMBER(1),
+    popularity NUMBER(3),
     timestamp NUMBER(20)
 );
 CREATE TABLE GENRES(
@@ -32,7 +34,8 @@ CREATE TABLE ALBUMS(
     name NVARCHAR2(64) NOT NULL,
     image_url VARCHAR2(200),
     release_date VARCHAR(10),
-    timestamp NUMBER(20)
+    popularity NUMBER(3),
+    timestamp NUMBER(20),
 );
 CREATE TABLE ALBUM_ARTISTS(
     albums_id_fkey VARCHAR(22),
@@ -45,6 +48,8 @@ CREATE TABLE ARTISTS(
     id_pkey VARCHAR(22) PRIMARY KEY,
     name NVARCHAR2(64) NOT NULL,
     image_url VARCHAR(200),
+    popularity NUMBER(3),
+    followers NUMBER(10),
     timestamp NUMBER(20)
 );
 CREATE TABLE FAVORITES(

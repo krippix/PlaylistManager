@@ -17,11 +17,11 @@ class User():
     
     def __init__(self, 
                 id: str,
-                display_name="UNKNOWN",
-                email="noreply@spotify.com",
-                expires_at=0,
-                api_token="?",
-                image_url="https://spotify.com/yeet.png",
+                display_name=None,
+                email=None,
+                expires_at=None,
+                api_token=None,
+                image_url=None,
                 timestamp=int(time.time())
                 ):
         """Spotify user, usually used to connect the account and keep auth data for later use.
