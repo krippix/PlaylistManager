@@ -48,6 +48,17 @@ class Album(spotifyObject.SpotifyObject):
 
     def get_images(self) -> str:
         return self.images
+    
+    def get_image_url(self) -> str:
+        """Returns first found image url
+
+        Returns:
+            str: image url
+        """
+        try:
+            return self.images[0][1]
+        except Exception:
+            return ""
 
     def get_release_date(self) -> str:
         return self.release_date
@@ -64,7 +75,7 @@ class Album(spotifyObject.SpotifyObject):
         self.tracks = tracks
 
     def set_artists(self, artists: list[artist.Artist]):
-        self.aritsts = artists
+        self.artists = artists
 
     def set_images(self, images):
         """Set list of image tuples
@@ -102,9 +113,9 @@ class Album(spotifyObject.SpotifyObject):
             return False
         
         # Compare amount of tracks and artists
-        if len(self.get_tracks) != len(other.get_tracks()):
+        if len(self.get_tracks()) != len(other.get_tracks()):
             return False
-        if len(self.get_artists) != len(other.get_artists()):
+        if len(self.get_artists()) != len(other.get_artists()):
             return False
 
         # Check if artists are equal
