@@ -63,8 +63,11 @@ class User():
         return self.timestamp
     
     def get_token(self) -> dict:
-        return self.token
-
+        if not self.has_token():
+            return {"access_token":"","token_type":"","expires_in":"","scope":"","expires_at":"","refresh_token":""}
+        else:
+            return self.token
+        
     # ---- Setter Functions ----
 
     def set_id(self, id: str):
@@ -124,8 +127,23 @@ class User():
         # timestamp
         self.set_timestamp(new.get_timestamp())
         # token
-        if new.get_token() is None:
-            self.set_token(old.get_token())
-        else:
+        if new.has_token():
             self.set_token(new.get_token())
+        elif old.has_token():
+            self.set_token(old.get_token())
         return self
+    
+    def has_token(self) -> bool:
+        """
+        Checks if user contains usable token
+
+        Returns:
+            bool: token usable
+        """
+        if self.token is None:
+            return False
+        required_keys = ["access_token","token_type","expires_in","scope","expires_at","refresh_token"]
+        for key in required_keys:
+            if key not in self.token:
+                return False
+        return True
