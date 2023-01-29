@@ -39,14 +39,7 @@ CREATE TABLE ALBUMS(
     image_url VARCHAR2(200),
     release_date VARCHAR(10),
     popularity NUMBER(3),
-    timestamp NUMBER(20),
-);
-CREATE TABLE ALBUM_ARTISTS(
-    albums_id_fkey VARCHAR(22),
-    artists_id_fkey VARCHAR(22),
-    PRIMARY KEY (albums_id_fkey,artists_id_fkey),
-    FOREIGN KEY (albums_id_fkey) REFERENCES ALBUMS(id_pkey),
-    FOREIGN KEY (artists_id_fkey) REFERENCES ARTISTS(id_pkey)
+    timestamp NUMBER(20)
 );
 CREATE TABLE ARTISTS(
     id_pkey VARCHAR(22) PRIMARY KEY,
@@ -62,6 +55,13 @@ CREATE TABLE FAVORITES(
     PRIMARY KEY (users_id_fkey,tracks_id_fkey),
     FOREIGN KEY (users_id_fkey) REFERENCES USERS(id_pkey),
     FOREIGN KEY (tracks_id_fkey) REFERENCES TRACKS(id_pkey)
+);
+CREATE TABLE ALBUM_ARTISTS(
+    albums_id_fkey VARCHAR(22),
+    artists_id_fkey VARCHAR(22),
+    PRIMARY KEY (albums_id_fkey,artists_id_fkey),
+    FOREIGN KEY (albums_id_fkey) REFERENCES ALBUMS(id_pkey),
+    FOREIGN KEY (artists_id_fkey) REFERENCES ARTISTS(id_pkey)
 );
 CREATE TABLE PLAYLIST_CONTENT(
     playlists_id_fkey VARCHAR(22),
