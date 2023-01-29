@@ -129,7 +129,7 @@ class OracleCon(interface.Interface):
         ).fetchall()
         tracks = []
         for track in db_tracks:
-            tracks.append(get_track(track[0]))
+            tracks.append(self.get_track(track[0]))
         # Get Playlist genres from db
         genres = []
         db_genres = self.cursor.execute("SELECT genres_id_fkey FROM playlist_genres WHERE playlists_id_fkey=:id",id=id).fetchall()
@@ -214,8 +214,66 @@ class OracleCon(interface.Interface):
         )
         return user
 
+    def get_token(self, user_id: str) -> dict | None:
+        """Gets access token for spotify api
+
+        Args:
+            user_id (str): _description_
+
+        Returns:
+            dict | None: _description_
+        """
+        result = self.cursor.execute(
+            "SELECT access_token,token_type,expires_in,scope,expires_at,refresh_token FROM users "+
+            "WHERE id_pkey=:id",
+            id=user_id
+        ).fetchone()
+        token = {
+            "access_token": result[0],
+            "token_type": result[1],
+            "expires_in": result[2],
+            "scope": result[3],
+            "expires_at": result[4],
+            "refresh_token": result[5]
+        }
+        for key in token.keys():
+            if token[key] is None:
+                return None
+        return token
 
     # ---- Setter Functions ----
+    
+    def set_token(self, user_id: str, token_info: dict):
+        """Writes Authentication API token into database
+
+        Args:
+            user_id (str): _description_
+            token_info (dict): _description_
+        """
+        result = self.cursor.execute("SELECT * FROM users WHERE id_pkey=:id",id=user_id).fetchall()
+        if result:
+            self.cursor.execute(
+                "UPDATE users SET access_token=:access_token,token_type=:token_type,expires_in=:expires_in,scope=:scope,expires_at=:expires_at,refresh_token=:refresh_token",
+                access_token=token_info["access_token"],
+                token_type=token_info["token_type"],
+                expires_in=token_info["expires_in"],
+                scope=token_info["scope"],
+                expires_at=token_info["expires_at"],
+                refresh_token=token_info["refresh_token"]
+            )
+        else:
+            self.cursor.execute(
+                "INSERT INTO users (id_pkey,access_token,token_type,expires_in,scope,expires_at,refresh_token) VALUES (:id_pkeyaccess_token,:token_type,:expires_in,:scope,:expires_at,:refresh_token)",
+                id_pkey=user_id,
+                access_token=token_info["access_token"],
+                token_type=token_info["token_type"],
+                expires_in=token_info["expires_in"],
+                scope=token_info["scope"],
+                expires_at=token_info["expires_at"],
+                refresh_token=token_info["refresh_token"]
+            )
+        self.connection.commit()
+        return
 
     def __set_artist_genres(self, artist: artist.Artist):
         """Sets genres associated with the given artist to the values defined in the given object
@@ -498,7 +556,7 @@ class OracleCon(interface.Interface):
         # Replace entire playlist
         self.cursor.execute("DELETE FROM playlist_content WHERE playlists_id_fkey=:id",id=playlist.get_id())
         self.cursor.execute("DELETE FROM playlists WHERE id_pkey=:id",id=playlist.get_id())
-        self.cursor.execute("DELETE FROM user_playlists WHERE users_id_fkey=:user_id AND playlists_id_fkey=:playlist_id",user_id=user_id,playlist_id=playlist.get_id())
+        self.cursor.execute("DELETE FROM user_playlists WHERE users_id_fkey=:user_id AND playlists_id_fkey=:playlist_id",user_id=playlist.get_user_id(),playlist_id=playlist.get_id())
         self.cursor.execute(
             "INSERT INTO PLAYLISTS (id_pkey,creator_id,name,description,image_url,timestamp) "+
             "VALUES (:id,:user_id,:name,:desc,:url,:timestamp)",
@@ -518,7 +576,7 @@ class OracleCon(interface.Interface):
                 )
         self.cursor.execute(
             "INSERT INTO user_playlists (users_id_fkey,playlists_id_fkey,is_managed) VALUES (:user_id,:playlist_id,:managed)",
-            user_id=user_id,
+            user_id=playlist.get_user_id(),
             playlist_id=playlist.get_id(),
             managed=playlist.is_managed()
             )
@@ -596,7 +654,7 @@ class OracleCon(interface.Interface):
         Args:
             playlist_id (playlist.Playlist): Spotify Playlist object
         """
-        self.cursor.execute("DELETE FROM user_playlists WHERE users_id_fkey=:user_id AND playlists_id_fkey=:",user_id=playlist.get_user_id(),id=playlist_id)
+        self.cursor.execute("DELETE FROM user_playlists WHERE users_id_fkey=:user_id AND playlists_id_fkey=:",user_id=playlist.get_user_id(),id=playlist.get_id())
         self.connection.commit()
         # If playlist no longer in use, remove from database
         if not self.cursor.execute("SELECT * FROM user_playlists WHERE playlists_id_fkey=:id",id=playlist.get_id()).fetchall():

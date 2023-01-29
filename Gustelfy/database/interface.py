@@ -42,6 +42,10 @@ class Interface(ABC):
     @abstractmethod
     def get_user(self, id: str) -> user.User | None:
         '''Returns user object with given id.'''
+        
+    @abstractmethod
+    def get_token(self, user_id: str) -> dict | None:
+        pass
 
     # ---- Setter Functions ----
 
