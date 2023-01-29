@@ -1,6 +1,7 @@
 # external
 import spotipy
 from spotipy import CacheHandler
+from requests import ReadTimeout
 # python native
 import logging
 import time
@@ -72,7 +73,15 @@ class Spotify_api:
 
     def get_user_id(self) -> str:
         '''Returns current user's spotify id.'''
-        return self.spotify.current_user()["id"]
+        retry = 0
+        while True:
+            try:
+                return self.spotify.current_user()["id"]
+            except ReadTimeout as e:
+                time.sleep(1+2*retry)
+                retry += 1
+                if retry > 4:
+                    raise e
 
 
     def get_display_name(self) -> str:
@@ -192,17 +201,20 @@ class Spotify_api:
         playlist_list = []
         while not done:
             results = self.spotify.current_user_playlists(limit=50,offset=offset)
-
             # Append Playlists
             for lst in results["items"]:
+                if len(lst["images"]) != 0:
+                    image_url = lst["images"][0]["url"]
+                else:
+                    image_url = None
                 playlist_list.append(playlist.Playlist(
                     id=lst["id"],
                     name=lst["name"],
                     owner_id=lst["owner"]["id"],
-                    user_id=self.user.get_id(),
-                    image_url=lst["images"]["url"]
+                    user_id=self.get_user_id(),
+                    image_url=image_url
                 ))
-            if len(playlist_list >= results["total"]):
+            if len(playlist_list) >= results["total"]:
                 done = True
             offset += 50
         return playlist_list
@@ -227,18 +239,29 @@ class Spotify_api:
             return result
         # Get tracks seperately, because they contain more details that way
         playlist_tracks = self.__fetch_playlist_tracks(playlist_id)
-        
-        playlist_result = playlist.Playlist(
-            id=playlist_id,
-            name=result["name"],
-            owner_id=result["owner"]["id"],
-            tracks=playlist_tracks,
-            description=result["description"],
-            image_url=result["images"][0]["url"],
-        )
+        if len(result["images"]) == 0:
+            image_url = None
+        else:
+            image_url = result["images"][0]["url"]
+
+        try:
+            playlist_result = playlist.Playlist(
+                id          = playlist_id,
+                name        = result["name"],
+                owner_id    = result["owner"]["id"],
+                tracks      = playlist_tracks,
+                description = result["description"],
+                image_url   = image_url
+            )
+        except Exception as e:
+            print(result)
+            print(f"Bruh wtf: {e}")
         return playlist_result
 
-    def __fetch_playlist_tracks(self, playlist_id: str) -> list[track.Track]:
+    def amogus(self, playlist_id):
+        return self.__fetch_playlist_tracks(playlist_id,False)
+
+    def __fetch_playlist_tracks(self, playlist_id: str, json=False) -> list[track.Track]:
         """Gets detailed playlist track information
 
         Args:
@@ -247,12 +270,19 @@ class Spotify_api:
         Returns:
             list[track.Track]: _description_
         """
-        result = {"total":1}
+        if json:
+            return self.spotify.playlist_tracks(playlist_id)
+        done = False
         offset = 0
         track_list = []
-        while len(track_list) < result["total"]:
+        while not done:            
             result = self.spotify.playlist_tracks(playlist_id,offset=offset)
+
             for item in result["items"]:
+                # I have no clue why this can happen, but it does
+                if item["track"] is None:
+                    result["total"] -= 1
+                    continue
                 # Get track artists
                 track_artists = []
                 for art in item["track"]["artists"]:
@@ -262,11 +292,15 @@ class Spotify_api:
                     ))
                 # Get album artists
                 album_artists = []
-                for art in item["track"]["album"]["artists"]:
-                    album_artists.append(artist.Artist(
-                        id=art["id"],
-                        name=art["name"]
-                    ))
+                try:
+                    for art in item["track"]["album"]["artists"]:
+                        album_artists.append(artist.Artist(
+                            id=art["id"],
+                            name=art["name"]
+                        ))
+                except Exception as e:
+                    print(e)
+                    print(item)
                 # Get track album
                 track_album = album.Album(
                     id=item["track"]["album"]["id"],
@@ -284,7 +318,10 @@ class Spotify_api:
                     explicit=item["track"]["explicit"],
                     popularity=item["track"]["popularity"]
                 ))
-            offset += 100
+            if len(track_list) == result["total"]:
+                done = True
+            else:
+                offset += 100
         return track_list
     
     def fetch_track(self, track_id: str) -> track.Track:
@@ -387,20 +424,37 @@ class Spotify_api:
                     ))
                 # create track object
                 track_list.append(track.Track(
-                    id=trk["id"],
-                    name=trk["name"],
+                    id=trk["track"]["id"],
+                    name=trk["track"]["name"],
                     artists=trk_artists,
-                    duration_ms=trk["duration_ms"],
+                    duration_ms=trk["track"]["duration_ms"],
                     album=trk_album,
-                    track_number=trk["track_number"],
-                    explicit=trk["explicit"],
-                    popularity=trk["popularity"]
+                    track_number=trk["track"]["track_number"],
+                    explicit=trk["track"]["explicit"],
+                    popularity=trk["track"]["popularity"]
                 ))
             if offset >= results["total"]:
                 done = True
             else:
                 offset += 50
         return track_list
+    
+    def fetch_current_user(self, json=False) -> user.User:
+        """Returns detailed spotify user object.
+
+        Returns:
+            user.User: _description_
+        """
+        result = self.spotify.current_user()
+        if json:
+            return result
+        user_result = user.User(
+            id=result["id"],
+            display_name=result["display_name"],
+            image_url=result["images"][0]["url"],
+            followers=result["followers"]["total"]
+        )
+        return user_result
 
 class CacheDatabaseHandler(CacheHandler):
     """
