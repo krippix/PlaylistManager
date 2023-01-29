@@ -1,9 +1,11 @@
 # external
 import spotipy
+from spotipy import CacheHandler
 # python native
 import logging
 import time
 # project
+from Gustelfy.database import database
 from Gustelfy.util import config
 from Gustelfy.objects import album, artist, playlist, track, user
 
@@ -11,15 +13,14 @@ from Gustelfy.objects import album, artist, playlist, track, user
 class Spotify_api:
     """Class handling the spotify connection
     """
-
     spotify: spotipy.Spotify
     settings: config.Config
     user: user.User
     client_id: str
     client_secret: str
     scopes = [
-            "user-library-read",
             "user-library-modify",
+            "user-library-read",
             "playlist-read-private",
             "playlist-modify-private",
             "playlist-read-collaborative",
@@ -193,7 +194,7 @@ class Spotify_api:
             results = self.spotify.current_user_playlists(limit=50,offset=offset)
 
             # Append Playlists
-            for lst in result["items"]:
+            for lst in results["items"]:
                 playlist_list.append(playlist.Playlist(
                     id=lst["id"],
                     name=lst["name"],
@@ -201,7 +202,7 @@ class Spotify_api:
                     user_id=self.user.get_id(),
                     image_url=lst["images"]["url"]
                 ))
-            if len(playlist_list >= result["total"]):
+            if len(playlist_list >= results["total"]):
                 done = True
             offset += 50
         return playlist_list
@@ -357,7 +358,7 @@ class Spotify_api:
         offset = 0
         track_list = []
         while not done:
-            result = self.spotify.current_user_saved_tracks(limit=50,offset=offset)
+            results = self.spotify.current_user_saved_tracks(limit=50,offset=offset)
             for trk in results["items"]:
                 # Get album artists
                 album_artists = []
@@ -395,13 +396,34 @@ class Spotify_api:
                     explicit=trk["explicit"],
                     popularity=trk["popularity"]
                 ))
-            if offset >= result["total"]:
+            if offset >= results["total"]:
                 done = True
             else:
                 offset += 50
         return track_list
 
+class CacheDatabaseHandler(CacheHandler):
+    """
+    Implements CacheHandler for using SQL databases
+    """
+    def __init__(self, database: database.Database, user_id: str):
+        self.logger = logging.getLogger(__name__)
+        self.database = database
+        self.user_id = user_id
+        
 
+    def get_cached_token(self):
+        token_info = None
+        try:
+            token_info = self.database.get_token(self.user_id)
+        except Exception as e:
+            self.logger.error(f"Failed to retrieve API token for user: {e}")
+        return token_info
+    
+    def save_token_to_cache(self, token_info):
+        self.database.set_token(self.user_id,token_info)
+    
+    
 if __name__ == "__main__":
     logging.error("This file is not supposed to be executed.")
     exit()
