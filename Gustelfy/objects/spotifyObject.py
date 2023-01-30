@@ -49,12 +49,15 @@ class SpotifyObject(ABC):
         self.id = id
 
     def set_name(self, name: str):
-        self.name = name
+        if name is None:
+            raise TypeError
+        else:
+            self.name = name
 
     def set_timestamp(self, timestamp=int(time.time())):
         self.timestamp = timestamp
 
-    def set_expires_after(seconds):
+    def set_expires_after(self, seconds):
         self.expires_after = seconds
     
     # ---- Other Functions ----

@@ -31,6 +31,7 @@ class Spotify_api:
     def __init__(self, user=None):
         # fetch credentials from config.ini
         self.logger = logging.getLogger(__name__)
+        self.logger.debug(f"__init__()")
         self.settings = config.Config()
         self.client_id = self.settings.get_config("AUTH","client_id")
         self.client_secret = self.settings.get_config("AUTH","client_secret")
@@ -51,6 +52,7 @@ class Spotify_api:
 
     def check_credentials(self):
         '''Checks if any credentials have been provided in config.ini'''
+        self.logger.debug(f"check_credentials()")
         missing_credentials = False
         
         if len(self.client_id) == 0:
@@ -108,7 +110,7 @@ class Spotify_api:
         try:
             result = self.spotify.album(album_id)
         except Exception as e:
-            logging.error(f"Album with id '{album_id}' not found.\n{e}")
+            self.logger.error(f"Album with id '{album_id}' not found.\n{e}")
             return None
         if json:
             return result
@@ -270,6 +272,7 @@ class Spotify_api:
         Returns:
             list[track.Track]: _description_
         """
+        self.logger.debug(f"__fetch_playlist_tracks({playlist_id}, {json})")
         if json:
             return self.spotify.playlist_tracks(playlist_id)
         done = False

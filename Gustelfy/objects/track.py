@@ -112,7 +112,7 @@ class Track(spotifyObject.SpotifyObject):
 
     # ---- Other Functions ----
 
-    def is_equal(self, other) -> bool:
+    def is_equal(self, other: 'Track') -> bool:
         """Defines behaviour of the '==' operator
 
         Args:
@@ -121,7 +121,7 @@ class Track(spotifyObject.SpotifyObject):
         Returns:
             bool: whether or not the objects are considered equal
         """
-        if other is None:
+        if other is None or not isinstance(other, Track):
             return False
         if self.get_id() != other.get_id():
             return False
