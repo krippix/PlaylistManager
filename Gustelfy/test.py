@@ -4,6 +4,8 @@ import time
 import logging
 import json
 import sys
+import winsound
+import traceback
 # project
 from Gustelfy.database import database
 from Gustelfy.objects import album, artist, playlist, track, user
@@ -11,27 +13,32 @@ from Gustelfy.util import config
 from Gustelfy import session, spotify_api
 
 def test():
-    if len(sys.argv) >= 2:
-        if sys.argv[2] == "api":
-            api()
-            return
-        if sys.argv[2] == "merge":
-            merge()
-            return
-        if sys.argv[2] == "db":
-            db_connection()
-            return
-        if sys.argv[2] == "dbp":
-            dbp()
-    else:
-        print("Select test to run.")
+    try:
+        if len(sys.argv) >= 2:
+            if sys.argv[2] == "api":
+                api()
+                return
+            if sys.argv[2] == "merge":
+                merge()
+                return
+            if sys.argv[2] == "db":
+                db_connection()
+                return
+            if sys.argv[2] == "dbp":
+                dbp()
+        else:
+            print("Select test to run.")
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+        winsound.Beep(440, 500)
+    winsound.Beep(440, 500)
 
 def dbp():
     """Testrun without flask"""
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger("Gustelfy")
     logger.setLevel(10)
-    
-    logger.debug("test")
+
     ##testalbum = album.Album("amogus", "amogus", [track.Track("amo_gus", "name", [artist.Artist("i","i",12)])], [artist.Artist("i","i",12)])
 
     # Initialise config object

@@ -112,7 +112,7 @@ class Playlist(spotifyObject.SpotifyObject):
         Returns:
             bool: whether or not they are equal
         """
-        if other is None:
+        if other is None or not isinstance(other, Playlist):
             return False
         if self.get_id() != other.get_id():
             return False
