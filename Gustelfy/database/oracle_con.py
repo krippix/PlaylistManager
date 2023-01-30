@@ -149,15 +149,18 @@ class OracleCon(interface.Interface):
             managed = None
         # Get Playlist tracks from db
         db_tracks = self.cursor.execute(
-            "SELECT tracks_id_pkey FROM playlist_content WHERE playlists_id_fkey=:id",
-            id=id
+            "SELECT tracks_id_fkey FROM playlist_content WHERE playlists_id_fkey=:id",
+            id=playlist_id
         ).fetchall()
         tracks = []
         for track in db_tracks:
             tracks.append(self.get_track(track[0]))
         # Get Playlist genres from db
         genres = []
-        db_genres = self.cursor.execute("SELECT genres_id_fkey FROM playlist_genres WHERE playlists_id_fkey=:id",id=id).fetchall()
+        db_genres = self.cursor.execute(
+            "SELECT genres_id_fkey FROM playlist_genres WHERE playlists_id_fkey=:id",
+            id=playlist_id
+        ).fetchall()
         for genre in db_genres:
             genres.append(genre[0])
         # Create Playlist object
@@ -230,7 +233,7 @@ class OracleCon(interface.Interface):
         ).fetchall()
         if not db_result:
             return None
-        user = user.User(
+        out_user = user.User(
             id=id,
             display_name=db_result[0][0],
             email=db_result[0][4],
@@ -239,7 +242,7 @@ class OracleCon(interface.Interface):
             image_url=db_result[0][1],
             timestamp=db_result[0][5]
         )
-        return user
+        return out_user
 
     def get_token(self, user_id: str) -> dict | None:
         """Gets access token for spotify api
@@ -283,12 +286,12 @@ class OracleCon(interface.Interface):
         if result:
             self.cursor.execute(
                 "UPDATE users SET access_token=:access_token,token_type=:token_type,expires_in=:expires_in,scope=:scope,expires_at=:expires_at,refresh_token=:refresh_token",
-                access_token=token_info["access_token"],
-                token_type=token_info["token_type"],
-                expires_in=token_info["expires_in"],
-                scope=token_info["scope"],
-                expires_at=token_info["expires_at"],
-                refresh_token=token_info["refresh_token"]
+                access_token  = token_info["access_token"],
+                token_type    = token_info["token_type"],
+                expires_in    = token_info["expires_in"],
+                scope         = token_info["scope"],
+                expires_at    = token_info["expires_at"],
+                refresh_token = token_info["refresh_token"]
             )
         else:
             self.cursor.execute(
@@ -354,101 +357,113 @@ class OracleCon(interface.Interface):
             exit()
         self.cursor = self.connection.cursor()
 
-
     # -- add --
 
-    def add_album(self, album: album.Album):
+    def add_album(self, album_in: album.Album):
         """Adds Album, it's tracks and artists into the database
 
         Args:
             album (album.Album): Spotify Album object
         """
-        self.logger.debug(f"add_album({album})")
-        # Add artists and track into the database
-        for artist in album.get_artists():
+        self.logger.debug(f"add_album({album_in})")
+        # Add artists and track into the 
+        if not isinstance(album_in, album.Album):
+            raise TypeError
+        for artist in album_in.get_artists():
             self.add_artist(artist)
-        for track in album.get_tracks():
+        for track in album_in.get_tracks():
             self.add_track(track)
         # Check if existing album is the same
-        if self.get_album(album.get_id()) is not None:
-            self.__update_album(album)
+        if self.get_album(album_in.get_id()) is not None:
+            self.__update_album(album_in)
             return
         # Add new album and associations into the database
         self.cursor.execute(
             "INSERT INTO albums (id_pkey,name,image_url,release_date,popularity,timestamp) "+
             "VALUES (:id_pkey,:name,:image_url,:release_date,:popularity,:timestamp)",
-            id_pkey      = album.get_id(),
-            name         = album.get_name(),
-            image_url    = album.get_image_url(),
-            release_date = album.get_release_date(),
-            popularity   = album.get_popularity(),
-            timestamp    = album.get_timestamp()
+            id_pkey      = album_in.get_id(),
+            name         = album_in.get_name(),
+            image_url    = album_in.get_image_url(),
+            release_date = album_in.get_release_date(),
+            popularity   = album_in.get_popularity(),
+            timestamp    = album_in.get_timestamp()
         )
         # Add tracks to album
-        for trk in album.get_tracks():
+        for trk in album_in.get_tracks():
             self.cursor.execute(
                 "INSERT INTO album_content (albums_id_fkey,tracks_id_fkey) VALUES (:album_id,:track_id)",
-                album_id=album.get_id(),
+                album_id=album_in.get_id(),
                 track_id=trk.get_id()
             )
-        for art in album.get_artists():
+        for art in album_in.get_artists():
             self.cursor.execute(
                 "INSERT INTO album_artists (albums_id_fkey,artists_id_fkey) VALUES (:album_id,:artist_id)",
-                album_id=album.get_id(),
+                album_id=album_in.get_id(),
                 artist_id=art.get_id()
             )
         self.connection.commit()
 
-    def add_artist(self, artist: artist.Artist):
+    def add_artist(self, artist_in: artist.Artist):
         """adds artist and their accociated genre into the database.
 
         Args:
             artist (artist.Artist): Spotify Artist object
         """
-        self.logger.debug(f"add_artist({artist})")
+        self.logger.debug(f"add_artist({artist_in})")
         # Check if artist is already in the database
-        if self.get_artist(artist.get_id()) is not None:
-            self.__update_artist(artist)
+        if not isinstance(artist_in, artist.Artist):
+            raise TypeError
+        if self.get_artist(artist_in.get_id()) is not None:
+            self.__update_artist(artist_in)
             return
         
         # Get artists genres
-        for genre in artist.get_genres():
+        for genre in artist_in.get_genres():
             self.add_genre(genre)
         
         # Write artist into the database
         self.cursor.execute(
             "INSERT INTO artists (id_pkey,name,image_url,timestamp) VALUES (:id_pkey,:name,:image_url,:timestamp)",
-            id_pkey=artist.get_id(),
-            name=artist.get_name(),
-            image_url=artist.get_image_url(),
-            timestamp=artist.get_timestamp()
+            id_pkey   = artist_in.get_id(),
+            name      = artist_in.get_name(),
+            image_url = artist_in.get_image_url(),
+            timestamp = artist_in.get_timestamp()
         )
         # Set artist <-> genres association
-        self.__set_artist_genres(artist)
+        self.__set_artist_genres(artist_in)
 
         # commit changes
         self.connection.commit()
 
-    def add_favorite(self, user: user.User, track: track.Track):
+    def add_favorite(self, user_in: user.User, track_in: track.Track):
         """Adds favorite track association into database, and track if it isn't there yet.
 
         Args:
             user (user.User): User who likes that track
             track (track.Track): track that the user likes
         """
-        self.logger.debug(f"add_favorite({user}, {track})")
-        if isinstance(user, str):
-            user_id = user
+        self.logger.debug(f"add_favorite({user_in}, {track_in})")
+        if not isinstance(track_in, track.Track):
+            raise TypeError()
+        if isinstance(user_in, str):
+            user_id = user_in
         else:
-            user_id = user.get_id()
-        self.add_track(track)
-        result = self.cursor.execute("SELECT (tracks_id_fkey) FROM favorites WHERE users_id_fkey = :user_id",user_id=user_id).fetchall()
+            user_id = user_in.get_id()
+        self.add_track(track_in)
+        result = self.cursor.execute(
+            "SELECT (tracks_id_fkey) FROM favorites WHERE users_id_fkey = :user_id",
+            user_id = user_id
+        ).fetchall()
         id_list = []
         for favorite in result:
             id_list.append(favorite[0])
-        if track.get_id() in id_list:
+        if track_in.get_id() in id_list:
             return
-        self.cursor.execute("INSERT INTO favorites (tracks_id_fkey,users_id_fkey) VALUES (:track_id,:user_id)",track_id=track.get_id(),user_id=user_id)
+        self.cursor.execute(
+            "INSERT INTO favorites (tracks_id_fkey,users_id_fkey) VALUES (:track_id,:user_id)",
+            track_id = track_in.get_id(),
+            user_id  = user_id
+        )
         self.connection.commit()
 
     def add_genre(self, genre: str):
@@ -460,78 +475,82 @@ class OracleCon(interface.Interface):
             self.cursor.execute("INSERT INTO GENRES (name) VALUES (:genre)",genre=genre)
             self.connection.commit()
 
-    def add_playlist(self, playlist: playlist.Playlist):
+    def add_playlist(self, playlist_in: playlist.Playlist):
         """Adds Playlist to the database, updates existing one.
 
         Args:
             playlist (playlist.Playlist): Playlist to save locally
         """
-        self.logger.debug(f"add_playlist({playlist})")
+        self.logger.debug(f"add_playlist({playlist_in})")
+        if not isinstance(playlist_in, playlist.Playlist):
+            raise TypeError
         # Check if playlist already exists
-        if self.get_playlist(playlist.get_id(),playlist.get_user_id()) is not None:
-            self.__update_playlist(playlist)
+        if self.get_playlist(playlist_in.get_id()) is not None:
+            self.__update_playlist(playlist_in)
             return
         # Add playlist to the database
         self.cursor.execute(
             "INSERT INTO playlists (id_pkey,owner_id,name,description,image_url,timestamp) "+
             "VALUES (:id_pkey,:owner_id,:name,:description,:image_url,:timestamp)",
-            id_pkey     = playlist.get_id(),
-            owner_id    = playlist.get_owner_id(),
-            name        = playlist.get_name(),
-            description = playlist.get_description(),
-            image_url   = playlist.get_image_url(),
-            timestamp   = playlist.get_timestamp()
+            id_pkey     = playlist_in.get_id(),
+            owner_id    = playlist_in.get_owner_id(),
+            name        = playlist_in.get_name(),
+            description = playlist_in.get_description(),
+            image_url   = playlist_in.get_image_url(),
+            timestamp   = playlist_in.get_timestamp()
         )
         # Add user association
-        if playlist.get_user_id() is not None:
+        if playlist_in.get_user_id() is not None:
             self.cursor.execute(
                 "INSERT INTO user_playlists (playlists_id_fkey,users_id_fkey,is_managed) "+
                 " VALUES (:playlists_id_fkey,:users_id_fkey,:is_managed)",
-                playlists_id_fkey = playlist.get_id(),
-                users_id_fkey     = playlist.get_user_id(),
-                is_managed        = playlist.is_managed()
+                playlists_id_fkey = playlist_in.get_id(),
+                users_id_fkey     = playlist_in.get_user_id(),
+                is_managed        = playlist_in.is_managed()
             )
         # Add tracks to the playlist
-        for track in playlist.get_tracks():
+        for track in playlist_in.get_tracks():
             self.add_track(track)
             self.cursor.execute(
                 "INSERT INTO playlist_content (playlists_id_fkey,tracks_id_fkey) VALUES (:id,:track_id)",
-                id       = playlist.get_id(),
+                id       = playlist_in.get_id(),
                 track_id = track.get_id()
             )
         self.connection.commit()
         return
 
-    def add_track(self, track: track.Track):
-        self.logger.debug(f"add_track({track})")
+    def add_track(self, track_in: track.Track):
+        self.logger.debug(f"add_track({track_in})")
+        if not isinstance(track_in, track.Track):
+            raise TypeError()
         # Check if track already exists
-        if self.cursor.execute("SELECT (id_pkey) FROM tracks WHERE id_pkey=:id_pkey",id_pkey=track.get_id()).fetchall():
-            self.__update_track(track)
+        if self.cursor.execute("SELECT (id_pkey) FROM tracks WHERE id_pkey=:id_pkey",id_pkey=track_in.get_id()).fetchall():
+            self.__update_track(track_in)
             return
         else:
             self.cursor.execute(
                 "INSERT INTO tracks (id_pkey,name,duration_ms,disc_number,explicit,popularity,timestamp) "+
                 "VALUES (:id_pkey,:name,:duration_ms,:disc_number,:explicit,:popularity,:timestamp)",
-                id_pkey     = track.get_id(),
-                name        = track.get_name(),
-                duration_ms = track.get_duration_ms(),
-                disc_number = track.get_disc_number(),
-                explicit    = track.is_explicit(),
-                popularity  = track.get_popularity(),
-                timestamp   = track.get_timestamp()
+                id_pkey     = track_in.get_id(),
+                name        = track_in.get_name(),
+                duration_ms = track_in.get_duration_ms(),
+                disc_number = track_in.get_disc_number(),
+                explicit    = track_in.is_explicit(),
+                popularity  = track_in.get_popularity(),
+                timestamp   = track_in.get_timestamp()
             )
         # Add album
-        self.add_album(track.get_album())
-        for artist in track.get_artists():
+        self.add_album(track_in.get_album())
+        for artist in track_in.get_artists():
             self.add_artist(artist)
             # Check if artist <-> track relation already exists
-            if self.cursor.execute("SELECT * from track_artists WHERE tracks_id_fkey=:track_id AND artists_id_fkey=:artist_id",track_id=track.get_id(),artist_id=artist.get_id()):
+            if self.cursor.execute("SELECT * from track_artists WHERE tracks_id_fkey=:track_id AND artists_id_fkey=:artist_id",track_id=track_in.get_id(),artist_id=artist.get_id()):
                 continue
             else:
                 self.cursor.execute(
                     "INSERT INTO tracks_artists (artists_id_fkey,tracks_id_fkey) VALUES (:artist_id,:track_id)",
                     artist_id = artist.get_id(),
-                    track_id  = track.get_id()
+                    track_id  = track_in.get_id()
                 )
         self.connection.commit()
         return
@@ -572,7 +591,10 @@ class OracleCon(interface.Interface):
         self.logger.debug(f"__update_album({album})")
         if album == self.get_album(album.get_id()):
             #update timestamp
-            self.cursor.execute("UPDATE albums SET timestamp=:time WHERE id_pkey=:id",time=album.get_timestamp(),id=album.get_id())
+            self.cursor.execute(
+                "UPDATE albums SET timestamp=:timestamp WHERE id_pkey=:id_pkey",
+                timestamp = album.get_timestamp(),
+                id_pkey   = album.get_id())
             self.connection.commit()
         else:
             # delete existing entries
@@ -614,28 +636,30 @@ class OracleCon(interface.Interface):
         self.cursor.execute("DELETE FROM playlists WHERE id_pkey=:id",id=playlist.get_id())
         self.cursor.execute("DELETE FROM user_playlists WHERE users_id_fkey=:user_id AND playlists_id_fkey=:playlist_id",user_id=playlist.get_user_id(),playlist_id=playlist.get_id())
         self.cursor.execute(
-            "INSERT INTO PLAYLISTS (id_pkey,creator_id,name,description,image_url,timestamp) "+
-            "VALUES (:id,:user_id,:name,:desc,:url,:timestamp)",
-            id=playlist.get_id(),
-            user_id=playlist.get_creator_id(),
-            name=playlist.get_name(),
-            desc=playlist.get_description(),
-            url=playlist.get_image_url(),
-            timestamp=playlist.get_timestamp()
+            "INSERT INTO PLAYLISTS (id_pkey,owner_id,name,description,image_url,timestamp) "+
+            "VALUES (:id_pkey,:owner_id,:name,:description,:image_url,:timestamp)",
+            id_pkey     = playlist.get_id(),
+            owner_id    = playlist.get_owner_id(),
+            name        = playlist.get_name(),
+            description = playlist.get_description(),
+            image_url   = playlist.get_image_url(),
+            timestamp   = playlist.get_timestamp()
         )
-        for track in playlist.get_tracks:
+        for track in playlist.get_tracks():
+            self.add_track(track)
             self.cursor.execute(
                 "INSERT INTO playlist_content (playlists_id_fkey,tracks_id_fkey) "+
                 "VALUES (:playlist_id,:track_id)",
-                playlist_id=playlist.get_id(),
-                track_id=track.get_id()
+                playlist_id = playlist.get_id(),
+                track_id    = track.get_id()
                 )
-        self.cursor.execute(
-            "INSERT INTO user_playlists (users_id_fkey,playlists_id_fkey,is_managed) VALUES (:user_id,:playlist_id,:managed)",
-            user_id=playlist.get_user_id(),
-            playlist_id=playlist.get_id(),
-            managed=playlist.is_managed()
-            )
+        if playlist.get_user_id() is not None:
+            self.cursor.execute(
+                "INSERT INTO user_playlists (users_id_fkey,playlists_id_fkey,is_managed) VALUES (:user_id,:playlist_id,:managed)",
+                user_id=playlist.get_user_id(),
+                playlist_id=playlist.get_id(),
+                managed=playlist.is_managed()
+                )
         self.connection.commit()
         return
 
