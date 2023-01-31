@@ -21,7 +21,10 @@ class SpotifyObject(ABC):
         return self.is_equal(other)
 
     def __str__(self):
-        return self.name
+        if self.name is None:
+            return "None"
+        else:
+            return self.name
 
     def __repr__(self):
         return self.__str__()
@@ -46,11 +49,14 @@ class SpotifyObject(ABC):
     # ---- Setter Functions ----
 
     def set_id(self, id: str):
-        self.id = id
+        if id is None:
+            raise TypeError("None not allowed")
+        else:
+            self.id = id
 
     def set_name(self, name: str):
         if name is None:
-            raise TypeError
+            raise TypeError    
         else:
             self.name = name
 

@@ -24,7 +24,10 @@ class OracleCon(interface.Interface):
             album.Album | None: Album, or None if no result found
         """
         self.logger.debug(f"get_album({id})")
-        album_result = self.cursor.execute("SELECT id_pkey,name,image_url,timestamp,release_date FROM ALBUMS WHERE id_pkey=:id", id=id).fetchall()
+        album_result = self.cursor.execute(
+            "SELECT id_pkey,name,image_url,timestamp,release_date FROM ALBUMS WHERE id_pkey=:id_pkey",
+            id_pkey=id
+        ).fetchall()
         if not album_result:
             return None
         result = album.Album(
@@ -38,39 +41,7 @@ class OracleCon(interface.Interface):
         result.set_release_date(album_result[0][4])
         return result
 
-    def __get_album_artists(self, album_id: str) -> list[artist.Artist]:
-        """Gets list of artists associated with the given ID from the database
-
-        Args:
-            album_id (str): album's spotify ID
-
-        Returns:
-            list[artist.Artist]: list of Artist objects
-        """
-        self.logger.debug(f"__get_album_artists({album_id})")
-        db_result = self.cursor.execute("SELECT artists_id_fkey FROM album_artists WHERE albums_id_fkey=:album_id",album_id=album_id).fetchall()
-        artist_list = []
-        for db_artist in db_result:
-            artist_list.append(self.get_artist(db_artist[0]))
-        return artist_list
-
-    def __get_album_tracks(self, album_id: str) -> list[track.Track]:
-        """Returns list associated with the given Album ID from the database
-
-        Args:
-            album_id (str): Spotify API is String
-
-        Returns:
-            list[track.Track]: list of track objects
-        """
-        self.logger.debug(f"__get_album_tracks({album_id})")
-        db_result = self.cursor.execute("SELECT tracks_id_fkey FROM album_content WHERE albums_id_fkey = :album_id",album_id=album_id).fetchall()
-        track_list = []
-        for trk in db_result:
-            track_list.append(self.get_track(trk[0]))
-        return track_list
-
-    def get_artist(self, id) -> artist.Artist | None:
+    def get_artist(self, id: str) -> artist.Artist | None:
         """Returns artist with provided id
 
         Args:
@@ -80,29 +51,24 @@ class OracleCon(interface.Interface):
             artist.Artist | None: _description_
         """
         self.logger.debug(f"get_artist({id})")
+
         result = self.cursor.execute(
-            "SELECT id_pkey,name,image_url,timestamp FROM artists "+
+            "SELECT name,image_url,popularity,followers,timestamp FROM artists "+
             " WHERE id_pkey=:id_pkey",
             id_pkey = id
         ).fetchall()
         if not result:
             return None
         artist_result = artist.Artist(
-            id=result[0][0],
-            name=result[0][1],
-            genres=self.__get_artist_genres(id),
-            timestamp=result[0][3]
+            id         = id,
+            name       = result[0][0],
+            images     = [{"width":None,"url":result[0][1],"height":None}],
+            popularity = result[0][2],
+            followers  = result[0][3],
+            timestamp  = result[0][4],
+            genres     = self.__get_artist_genres(id)
         )
-        artist_result.set_images([(0,result[0][2],0)])
         return artist_result
-
-    def __get_artist_genres(self, artist_id) -> list[str]:
-        self.logger.debug(f"__get_artist_genres({artist_id})")
-        result = self.cursor.execute("SELECT genres_id_fkey FROM artist_genres WHERE artists_id_fkey=:artist_id",artist_id=artist_id)
-        genre_list = []
-        for genre in result:
-            genre_list.append(genre[0])
-        return genre_list
 
     def get_favorites(self, user_id: str) -> list[track.Track]:
         """Returns list of favorites listed in the offline db
@@ -131,6 +97,7 @@ class OracleCon(interface.Interface):
             playlist.Playlist: Spotify Playlist object
         """
         self.logger.debug(f"get_playlist({playlist_id}, {user_id})")
+
         # Get Playlist data from db
         db_playlist = self.cursor.execute(
             "SELECT owner_id,name,description,image_url,timestamp FROM playlists WHERE id_pkey=:id_pkey",
@@ -183,35 +150,37 @@ class OracleCon(interface.Interface):
 
         Args:
             id (str): Spotify ID of the track
-
         Returns:
             track.Track: Spotify Track object
         """
         self.logger.debug(f"get_track({id})")
         # Get track from the database
         track_result = self.cursor.execute(
-            "SELECT name,duration_ms,disc_number,explicit,timestamp FROM tracks WHERE id_pkey=:id",
-            id=id
+            "SELECT name,duration_ms,disc_number,explicit,popularity,timestamp,track_number,albums_id_fkey FROM tracks WHERE id_pkey=:id_pkey",
+            id_pkey = id
         ).fetchall()
         if not track_result:
             return None
-        # Retrieve artists associated with this track
+        # Track artists
         artists_result = self.cursor.execute(
-            "SELECT artists_id_fkey FROM track_artists WHERE tracks_id_fkey=:id",
-            id=id
+            "SELECT artists_id_fkey FROM track_artists WHERE tracks_id_fkey=:id_pkey",
+            id_pkey=id
         ).fetchall()
         artists = []
         for artist_id in artists_result:
             artists.append(self.get_artist(artist_id[0]))
         # Create track object to return
         result = track.Track(
-            id=id,
-            name=track_result[0][0],
-            artists=artists,
-            timestamp=track_result[0][4],
-            duration_ms=track_result[0][1],
-            disc_number=track_result[0][2],
-            explicit=track_result[0][3]
+            id           = id,
+            name         = track_result[0][0],
+            artists      = artists,
+            timestamp    = track_result[0][5],
+            duration_ms  = track_result[0][1],
+            album_id     = track_result[0][7],
+            disc_number  = track_result[0][2],
+            track_number = track_result[0][6],
+            explicit     = track_result[0][3],
+            popularity   = track_result[0][4],
         )
         return result
         
@@ -272,6 +241,93 @@ class OracleCon(interface.Interface):
                 return None
         return token
 
+    # -- get_incomplete_
+    # Tracks objects that have rows with (null)
+
+    def get_incomplete_all(self) -> dict:
+        """Get all incomplete object id's
+        Returns:
+            {"albums":[],"artists":[],"playlists":[]"tracks":[]}
+        """
+        result = {}
+        result["albums"]    = self.get_incomplete_albums()
+        result["artists"]   = self.get_incomplete_artists()
+        result["playlists"] = self.get_incomplete_playlists()
+        result["tracks"]    = self.get_incomplete_tracks()
+        return result
+
+    def get_incomplete_albums(self):
+        result = self.cursor.execute(
+            "SELECT id_pkey FROM albums "+
+            " WHERE name is NULL "+
+            " OR image_url is NULL "+
+            " OR release_date is NULL"+
+            " OR popularity is NULL"
+        ).fetchall()
+        id_list = []
+        for row in result:
+            id_list.append(row[0])
+        return id_list
+
+    def get_incomplete_artists(self):
+        result = self.cursor.execute(
+            "SELECT id_pkey FROM artists "+
+            "WHERE image_url is NULL "+
+            "OR popularity is NULL "+
+            "OR followers is NULL"
+        ).fetchall()
+
+    def get_incomplete_playlists(self):
+        pass
+    
+    def get_incomplete_tracks(self):
+        pass
+
+    # -- __get --
+
+    def __get_album_artists(self, album_id: str) -> list[artist.Artist]:
+        """Gets list of artists associated with the given ID from the database
+
+        Args:
+            album_id (str): album's spotify ID
+
+        Returns:
+            list[artist.Artist]: list of Artist objects
+        """
+        self.logger.debug(f"__get_album_artists({album_id})")
+        db_result = self.cursor.execute(
+            "SELECT artists_id_fkey FROM album_artists WHERE albums_id_fkey=:album_id",
+            album_id = album_id
+        ).fetchall()
+        artist_list = []
+        for db_artist in db_result:
+            artist_list.append(self.get_artist(db_artist[0]))
+        return artist_list
+
+    def __get_album_tracks(self, album_id: str) -> list[track.Track]:
+        """Returns list associated with the given Album ID from the database
+
+        Args:
+            album_id (str): Spotify API is String
+
+        Returns:
+            list[track.Track]: list of track objects
+        """
+        self.logger.debug(f"__get_album_tracks({album_id})")
+        db_result = self.cursor.execute("SELECT id_pkey FROM tracks WHERE albums_id_fkey = :album_id",album_id=album_id).fetchall()
+        track_list = []
+        for trk in db_result:
+            track_list.append(self.get_track(trk[0]))
+        return track_list
+
+    def __get_artist_genres(self, artist_id) -> list[str]:
+        self.logger.debug(f"__get_artist_genres({artist_id})")
+        result = self.cursor.execute("SELECT genres_id_fkey FROM artist_genres WHERE artists_id_fkey=:artist_id",artist_id=artist_id)
+        genre_list = []
+        for genre in result:
+            genre_list.append(genre[0])
+        return genre_list
+
     # ---- Setter Functions ----
     
     def set_token(self, user_id: str, token_info: dict):
@@ -296,13 +352,13 @@ class OracleCon(interface.Interface):
         else:
             self.cursor.execute(
                 "INSERT INTO users (id_pkey,access_token,token_type,expires_in,scope,expires_at,refresh_token) VALUES (:id_pkeyaccess_token,:token_type,:expires_in,:scope,:expires_at,:refresh_token)",
-                id_pkey=user_id,
-                access_token=token_info["access_token"],
-                token_type=token_info["token_type"],
-                expires_in=token_info["expires_in"],
-                scope=token_info["scope"],
-                expires_at=token_info["expires_at"],
-                refresh_token=token_info["refresh_token"]
+                id_pkey       = user_id,
+                access_token  = token_info["access_token"],
+                token_type    = token_info["token_type"],
+                expires_in    = token_info["expires_in"],
+                scope         = token_info["scope"],
+                expires_at    = token_info["expires_at"],
+                refresh_token = token_info["refresh_token"]
             )
         self.connection.commit()
         return
@@ -366,13 +422,20 @@ class OracleCon(interface.Interface):
             album (album.Album): Spotify Album object
         """
         self.logger.debug(f"add_album({album_in})")
+
         # Add artists and track into the 
+        if album_in is None:
+            return
+        if isinstance(album_in,str):
+            album_in = album.Album(id=album_in) 
         if not isinstance(album_in, album.Album):
+            print(album_in)
             raise TypeError
-        for artist in album_in.get_artists():
-            self.add_artist(artist)
-        for track in album_in.get_tracks():
-            self.add_track(track)
+
+        for art in album_in.get_artists():
+            self.add_artist(art)
+        for trk in album_in.get_tracks():
+            self.add_track(trk, from_album=True)
         # Check if existing album is the same
         if self.get_album(album_in.get_id()) is not None:
             self.__update_album(album_in)
@@ -388,13 +451,6 @@ class OracleCon(interface.Interface):
             popularity   = album_in.get_popularity(),
             timestamp    = album_in.get_timestamp()
         )
-        # Add tracks to album
-        for trk in album_in.get_tracks():
-            self.cursor.execute(
-                "INSERT INTO album_content (albums_id_fkey,tracks_id_fkey) VALUES (:album_id,:track_id)",
-                album_id=album_in.get_id(),
-                track_id=trk.get_id()
-            )
         for art in album_in.get_artists():
             self.cursor.execute(
                 "INSERT INTO album_artists (albums_id_fkey,artists_id_fkey) VALUES (:album_id,:artist_id)",
@@ -411,23 +467,26 @@ class OracleCon(interface.Interface):
         """
         self.logger.debug(f"add_artist({artist_in})")
         # Check if artist is already in the database
+        if artist_in is None:
+            return
         if not isinstance(artist_in, artist.Artist):
             raise TypeError
         if self.get_artist(artist_in.get_id()) is not None:
             self.__update_artist(artist_in)
             return
-        
         # Get artists genres
         for genre in artist_in.get_genres():
             self.add_genre(genre)
         
         # Write artist into the database
         self.cursor.execute(
-            "INSERT INTO artists (id_pkey,name,image_url,timestamp) VALUES (:id_pkey,:name,:image_url,:timestamp)",
-            id_pkey   = artist_in.get_id(),
-            name      = artist_in.get_name(),
-            image_url = artist_in.get_image_url(),
-            timestamp = artist_in.get_timestamp()
+            "INSERT INTO artists (id_pkey,name,image_url,popularity,followers,timestamp) VALUES (:id_pkey,:name,:image_url,:popularity,:followers,:timestamp)",
+            id_pkey    = artist_in.get_id(),
+            name       = artist_in.get_name(),
+            image_url  = artist_in.get_image_url(),
+            popularity = artist_in.get_popularity(), 
+            followers  = artist_in.get_followers(),
+            timestamp  = artist_in.get_timestamp()
         )
         # Set artist <-> genres association
         self.__set_artist_genres(artist_in)
@@ -519,28 +578,33 @@ class OracleCon(interface.Interface):
         self.connection.commit()
         return
 
-    def add_track(self, track_in: track.Track):
+    def add_track(self, track_in: track.Track, from_album=False):
         self.logger.debug(f"add_track({track_in})")
+        if track_in is None:
+            return
         if not isinstance(track_in, track.Track):
             raise TypeError()
+        # Add album
+        if not from_album:
+            self.add_album(track_in.get_album_id())
         # Check if track already exists
         if self.cursor.execute("SELECT (id_pkey) FROM tracks WHERE id_pkey=:id_pkey",id_pkey=track_in.get_id()).fetchall():
-            self.__update_track(track_in)
+            self.__update_track(track_in, from_album)
             return
         else:
             self.cursor.execute(
-                "INSERT INTO tracks (id_pkey,name,duration_ms,disc_number,explicit,popularity,timestamp) "+
-                "VALUES (:id_pkey,:name,:duration_ms,:disc_number,:explicit,:popularity,:timestamp)",
+                "INSERT INTO tracks (id_pkey,name,duration_ms,disc_number,explicit,popularity,timestamp,albums_id_fkey) "+
+                "VALUES (:id_pkey,:name,:duration_ms,:disc_number,:explicit,:popularity,:timestamp,:album_id)",
                 id_pkey     = track_in.get_id(),
                 name        = track_in.get_name(),
                 duration_ms = track_in.get_duration_ms(),
                 disc_number = track_in.get_disc_number(),
                 explicit    = track_in.is_explicit(),
                 popularity  = track_in.get_popularity(),
-                timestamp   = track_in.get_timestamp()
+                timestamp   = track_in.get_timestamp(),
+                album_id    = track_in.get_album_id()
             )
-        # Add album
-        self.add_album(track_in.get_album())
+        # Add artists
         for artist in track_in.get_artists():
             self.add_artist(artist)
             # Check if artist <-> track relation already exists
@@ -587,35 +651,44 @@ class OracleCon(interface.Interface):
 
     # -- Update --
 
-    def __update_album(self, album: album.Album):
-        self.logger.debug(f"__update_album({album})")
-        if album == self.get_album(album.get_id()):
-            #update timestamp
-            self.cursor.execute(
-                "UPDATE albums SET timestamp=:timestamp WHERE id_pkey=:id_pkey",
-                timestamp = album.get_timestamp(),
-                id_pkey   = album.get_id())
-            self.connection.commit()
-        else:
-            # delete existing entries
-            self.cursor.execute("DELETE FROM album_content WHERE album_id_fkey=:id",id=album.get_id())
-            self.cursor.execute("DELETE FROM album_artists WHERE album_id_fkey=:id",id=album.get_id())
-            self.cursor.execute("DELETE FROM albums WHERE id_pkey=:id",id=album.get_id())
-            self.connection.commit()
-            self.add_album(album)
+    def __update_album(self, album_in: album.Album):
+        """Update by merging database object with new object
+
+        Args:
+            album_in: _description_
+        """
+        self.logger.debug(f"__update_album({album_in})")
+        db_album = self.get_album(album_in.get_id())
+        album_in.merge(db_album)
+        # Update everything
+        self.cursor.execute(
+            "UPDATE albums SET "+
+            "name=:name,image_url=:image_url,release_date=:release_date,popularity=:popularity,timestamp=:timestamp "+
+            "WHERE id_pkey=:id_pkey",
+            id_pkey      = album_in.get_id(),
+            name         = album_in.get_name(),
+            image_url    = album_in.get_image_url(),
+            release_date = album_in.get_release_date(),
+            popularity   = album_in.get_popularity(),
+            timestamp    = album_in.get_timestamp()
+        )
+        self.connection.commit()
         return
         
 
-    def __update_artist(self, artist: artist.Artist):
-        self.logger.debug(f"__update_artist({artist})")
+    def __update_artist(self, artist_in: artist.Artist):
+        self.logger.debug(f"__update_artist({artist_in})")
+        artist_in.merge(self.get_artist(artist_in.get_id()))
         self.cursor.execute(
-            "UPDATE artists SET name=:name,image_url=:image_url,timestamp=:timestamp WHERE id_pkey=:id_pkey",
-            id_pkey=artist.get_id(),
-            name=artist.get_name(),
-            image_url=artist.get_image_url(),
-            timestamp=artist.get_timestamp()
+            "UPDATE artists SET name=:name,image_url=:image_url,popularity=:popularity,followers=:followers,timestamp=:timestamp WHERE id_pkey=:id_pkey",
+            id_pkey    = artist_in.get_id(),
+            name       = artist_in.get_name(),
+            image_url  = artist_in.get_image_url(),
+            popularity = artist_in.get_popularity(), 
+            followers  = artist_in.get_followers(),
+            timestamp  = artist_in.get_timestamp()
         )
-        self.__set_artist_genres(artist)
+        self.__set_artist_genres(artist_in)
         self.connection.commit()
         return
 
@@ -663,37 +736,36 @@ class OracleCon(interface.Interface):
         self.connection.commit()
         return
 
-    def __update_track(self, track: track.Track):
-        self.logger.debug(f"__update_track({track})")
-        db_track = self.get_track(track.get_id())
-        # Update timestamp if same
-        if db_track == track:
-            self.cursor.execute("UPDATE tracks SET timestamp=:time WHERE id_pkey=:id",time=track.get_timestamp(),id=track.get_id())
-            self.connection.commit()
-            return
-        for art in track.get_artists():
+    def __update_track(self, track_in: track.Track, from_album=False):
+        self.logger.debug(f"__update_track({track_in})")
+        db_track = self.get_track(track_in.get_id())
+        track_in.merge(db_track)
+        for art in track_in.get_artists():
             self.add_artist(art)
         # Update entire entry otherwise
         self.cursor.execute(
-            "UPDATE tracks SET name=:name,duration_ms=:duration_ms,disc_number=:disc_number,explicit=:explicit,popularity=:popularity,timestamp=:timestamp "+
+            "UPDATE tracks SET name=:name,albums_id_fkey=:album_id,duration_ms=:duration_ms,disc_number=:disc_number,track_number=:track_number,explicit=:explicit,popularity=:popularity,timestamp=:timestamp "+
             "WHERE id_pkey=:id_pkey",
-            id_pkey     = track.get_id(),
-            name        = track.get_name(),
-            duration_ms = track.get_duration_ms(),
-            disc_number = track.get_disc_number(),
-            explicit    = track.is_explicit(),
-            popularity  = track.get_popularity(),
-            timestamp   = track.get_timestamp()
+            id_pkey      = track_in.get_id(),
+            name         = track_in.get_name(),
+            album_id     = track_in.get_album_id(),
+            duration_ms  = track_in.get_duration_ms(),
+            disc_number  = track_in.get_disc_number(),
+            track_number = track_in.get_track_number(),
+            explicit     = track_in.is_explicit(),
+            popularity   = track_in.get_popularity(),
+            timestamp    = track_in.get_timestamp()
         )
         # add album
-        self.add_album(track.get_album())
+        if not from_album:
+            self.add_album(track_in.get_album_id())
         # Update artist connections
-        self.cursor.execute("DELETE FROM track_artists WHERE tracks_id_fkey=:id",id=track.get_id())
-        for artist in track.get_artists():
+        self.cursor.execute("DELETE FROM track_artists WHERE tracks_id_fkey=:id",id=track_in.get_id())
+        for artist in track_in.get_artists():
             self.cursor.execute(
                 "INSERT INTO track_artists (tracks_id_fkey,artists_id_fkey) "+
                 "VALUES (:track_id,:artist_id)",
-                track_id=track.get_id(),
+                track_id=track_in.get_id(),
                 artist_id=artist.get_id()
             )
         self.connection.commit()

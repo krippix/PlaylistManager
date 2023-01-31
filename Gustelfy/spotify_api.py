@@ -120,11 +120,6 @@ class Spotify_api:
         for art in result["artists"]:
             artist_list.append(artist.Artist(id=art["id"],name=art["name"]))
 
-        # get images
-        image_list = []
-        for img in result["images"]:
-            image_list.append((img["height"],img["url"],img["width"]))
-        
         # get Tracks
         # TODO: handle more than 50 tracks in single album
         album_tracks = []
@@ -134,23 +129,25 @@ class Spotify_api:
             for trk_art in trk["artists"]:
                 trk_artists.append(artist.Artist(id=trk_art["id"],name=trk_art["name"]))
             album_tracks.append(track.Track(
-                id=trk["id"],
-                name=trk["name"],
-                artists=trk_artists,
-                disc_number=trk["disc_number"],
-                duration_ms=trk["duration_ms"],
-                explicit=trk["explicit"],
-                track_number=trk["track_number"]
+                id           = trk["id"],
+                name         = trk["name"],
+                artists      = trk_artists,
+                album_id     = album_id,
+                disc_number  = trk["disc_number"],
+                duration_ms  = trk["duration_ms"],
+                explicit     = trk["explicit"],
+                track_number = trk["track_number"]
             ))
         # Build album object
         result_album = album.Album(
-            id=album_id,
-            artists=artist_list,
-            images=image_list,
-            name=result["name"],
-            popularity=result["popularity"],
-            release_date=result["release_date"],
-            total_tracks=result["total_tracks"]
+            id           = album_id,
+            name         = result["name"],
+            artists      = artist_list,
+            tracks       = album_tracks,
+            images       = result["images"],
+            release_date = result["release_date"],
+            total_tracks = result["total_tracks"],
+            popularity   = result["popularity"]
         )
         return result_album
     
@@ -163,10 +160,6 @@ class Spotify_api:
             return None
         if json:
             return result
-        # Get images
-        img_list = []
-        for img in result["images"]:
-            img_list.append((img["height"],img["url"],img["width"]))
         # Get Genres
         genre_list = []
         for gnr in result["genres"]:
@@ -176,7 +169,7 @@ class Spotify_api:
             id=artist_id,
             name=result["name"],
             genres=genre_list,
-            images=img_list,
+            images=result["images"],
             popularity=result["popularity"],
             followers=result["followers"]["total"]
         )
@@ -240,7 +233,7 @@ class Spotify_api:
         if json:
             return result
         # Get tracks seperately, because they contain more details that way
-        playlist_tracks = self.__fetch_playlist_tracks(playlist_id)
+        playlist_tracks = self.fetch_playlist_tracks(playlist_id)
         if len(result["images"]) == 0:
             image_url = None
         else:
@@ -260,10 +253,7 @@ class Spotify_api:
             print(f"Bruh wtf: {e}")
         return playlist_result
 
-    def amogus(self, playlist_id):
-        return self.__fetch_playlist_tracks(playlist_id,False)
-
-    def __fetch_playlist_tracks(self, playlist_id: str, json=False) -> list[track.Track]:
+    def fetch_playlist_tracks(self, playlist_id: str, json=False) -> list[track.Track]:
         """Gets detailed playlist track information
 
         Args:
@@ -295,27 +285,17 @@ class Spotify_api:
                     ))
                 # Get album artists
                 album_artists = []
-                try:
-                    for art in item["track"]["album"]["artists"]:
-                        album_artists.append(artist.Artist(
-                            id=art["id"],
-                            name=art["name"]
-                        ))
-                except Exception as e:
-                    print(e)
-                    print(item)
-                # Get track album
-                track_album = album.Album(
-                    id=item["track"]["album"]["id"],
-                    name=item["track"]["album"]["name"],
-                    artists=album_artists
-                )
+                for art in item["track"]["album"]["artists"]:
+                    album_artists.append(artist.Artist(
+                        id=art["id"],
+                        name=art["name"]
+                    ))
                 track_list.append(track.Track(
                     id=item["track"]["id"],
                     name=item["track"]["name"],
                     artists=track_artists,
                     duration_ms=item["track"]["duration_ms"],
-                    album=track_album,
+                    album_id=item["track"]["album"]["id"],
                     disc_number=item["track"]["disc_number"],
                     track_number=item["track"]["track_number"],
                     explicit=item["track"]["explicit"],
@@ -327,7 +307,7 @@ class Spotify_api:
                 offset += 100
         return track_list
     
-    def fetch_track(self, track_id: str) -> track.Track:
+    def fetch_track(self, track_id: str, json=False) -> track.Track:
         """Fetches detailed track information from Spotify database, rudimentary artist and album information.
 
         Args:
@@ -342,6 +322,8 @@ class Spotify_api:
         except Exception as e:
             logging.error(f"Track with id '{track_id}' not found.\n{e}")
             return None
+        if json:
+            return result
 
         # add artists ids into list
         artists = []
@@ -354,29 +336,25 @@ class Spotify_api:
         for album_artist in result["album"]["artists"]:
             album_artists.append(artist.Artist(id=album_artist["id"],name=album_artist["name"]))
 
-        # Create album images
-        album_image_list = []
-        for image in result["album"]["images"]:
-            album_image_list.append((image["height"],image["url"],image["width"]))
-
         # Build album to append
         tr_album = album.Album(
-            id=result["album"]["id"],
-            name=result["album"]["name"],
-            artists=artists,
-            total_tracks=result["album"]["total_tracks"],
-            images=album_image_list
+            id           = result["album"]["id"],
+            name         = result["album"]["name"],
+            artists      = artists,
+            total_tracks = result["album"]["total_tracks"],
+            images       = result["album"]["images"],
+            release_date = result["album"]["release_date"]
         )
         result_track = track.Track(
-            id=track_id,
-            name=result["name"],
-            artists=artists,
-            duration_ms=result["duration_ms"],
-            album=tr_album,
-            disc_number=result["disc_number"],
-            track_number=result["track_number"],
-            explicit=result["explicit"],
-            popularity=result["popularity"]
+            id           = track_id,
+            name         = result["name"],
+            artists      = artists,
+            duration_ms  = result["duration_ms"],
+            album        = tr_album,
+            disc_number  = result["disc_number"],
+            track_number = result["track_number"],
+            explicit     = result["explicit"],
+            popularity   = result["popularity"]
         ) 
         return result_track
     
@@ -407,34 +385,23 @@ class Spotify_api:
                         id=art["id"],
                         name=art["name"]
                     ))
-                # Get album images
-                album_images = []
-                for image in trk["track"]["album"]["images"]:
-                    album_images.append((image["height"],image["url"],image["width"]))
-                # create album object
-                trk_album = album.Album(
-                    id=trk["track"]["id"],
-                    name=trk["track"]["name"],
-                    artists=album_artists,
-                    images=album_images
-                )
                 # get track artists
                 trk_artists = []
                 for art in trk["track"]["artists"]:
                     trk_artists.append(artist.Artist(
-                        id=art["id"],
-                        name=art["name"]
+                        id   = art["id"],
+                        name = art["name"]
                     ))
                 # create track object
                 track_list.append(track.Track(
-                    id=trk["track"]["id"],
-                    name=trk["track"]["name"],
-                    artists=trk_artists,
-                    duration_ms=trk["track"]["duration_ms"],
-                    album=trk_album,
-                    track_number=trk["track"]["track_number"],
-                    explicit=trk["track"]["explicit"],
-                    popularity=trk["track"]["popularity"]
+                    id           = trk["track"]["id"],
+                    name         = trk["track"]["name"],
+                    artists      = trk_artists,
+                    duration_ms  = trk["track"]["duration_ms"],
+                    album_id     = trk["track"]["album"]["id"],
+                    track_number = trk["track"]["track_number"],
+                    explicit     = trk["track"]["explicit"],
+                    popularity   = trk["track"]["popularity"]
                 ))
             if offset >= results["total"]:
                 done = True
