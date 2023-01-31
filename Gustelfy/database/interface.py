@@ -47,6 +47,14 @@ class Interface(ABC):
     def get_token(self, user_id: str) -> dict | None:
         pass
 
+    @abstractmethod
+    def get_incomplete_all(self) -> dict:
+        """Get all incomplete object id's
+
+        Returns:
+            {"albums":[],"artists":[],"playlists":[]"tracks":[]}
+        """
+
     # ---- Setter Functions ----
 
     # ---- Other Functions ----

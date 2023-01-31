@@ -8,7 +8,7 @@ class Artist(spotifyObject.SpotifyObject):
     """Spotify Artist object. Contains genres.
     """
     genres: list[str]
-    images: list[tuple()]
+    images: list[dict]
     popularity: int
     followers: int
     
@@ -21,14 +21,16 @@ class Artist(spotifyObject.SpotifyObject):
                 popularity=None,
                 followers=None
                 ):
-        """Initialises new Artist object
+        """Creates Spotify Artist object
 
         Args:
-            id (str): _description_
-            name (str): _description_
-            genres (list, optional): _description_. Defaults to [].
-            timestamp (_type_, optional): _description_. Defaults to int(time.time()).
-            image_url (str, optional): _description_. Defaults to Spotify Logo
+            id: _description_
+            name: _description_
+            timestamp: _description_. Defaults to int(time.time()).
+            genres: _description_. Defaults to [].
+            images: _description_. Defaults to [].
+            popularity: _description_. Defaults to None.
+            followers: _description_. Defaults to None.
         """
         self.set_id(id)
         self.set_name(name)
@@ -44,7 +46,7 @@ class Artist(spotifyObject.SpotifyObject):
     def get_genres(self) -> list[str]:
         return self.genres
 
-    def get_images(self) -> list[tuple()]:
+    def get_images(self) -> list[dict]:
         return self.images
     
     def get_image_url(self) -> str:
@@ -54,9 +56,9 @@ class Artist(spotifyObject.SpotifyObject):
             str: image url
         """
         try:
-            return self.images[0][1]
-        except Exception:
-            return "https://t.scdn.co/images/3099b3803ad9496896c43f22fe9be8c4.png"
+            return self.images[0]["url"]
+        except IndexError:
+            return None
 
     def get_popularity(self) -> int:
         return self.popularity

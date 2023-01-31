@@ -44,9 +44,6 @@ class Session:
             self.db_con.add_playlist(full_playlist)
         # - track -> pulled from the other objects
         
-        
-
-    
     # ---- Getter Functions ----
 
     def get_homepage_data(self) -> dict:
@@ -156,9 +153,31 @@ class Session:
         # pull playlists
 
     def update_database(self):
-        '''Updates all track entries in database. This shouldnt change which songs are in the database but update names and artist information.'''
+        """This fills up all null values in the database and updates old database entries.
+        """
         self.logger.debug("update_database()")
-    
+        result = self.db_con.get_incomplete_all()
+        # albums
+        for alb in result["albums"]:
+            self.logger.info(f"Updating album {alb}")
+            self.db_con.add_album(self.spotify.fetch_album(alb))
+        """
+        # artists
+        for art in result["artists"]:
+            self.logger.info(f"Updating artist {art}")
+            self.db_con.add_artist(self.spotify.fetch_artist(art))
+        # playlists
+        for lst in result["playlists"]:
+            self.logger.info(f"Updating playlist {lst}")
+            self.db_con.add_playlist(self.spotify.fetch_playlist(lst))
+        # tracks
+        for trk in result["tracks"]:
+            self.logger.info(f"Updating track {trk}")
+            self.db_con.add_track(self.spotify.fetch_track(trk))
+        self.logger.info("Updating database finished")
+        """
+        
+
     def update_database_artists(self):
         '''Searches database for outdated artists.'''
         self.logger.debug("update_database_artists()")
