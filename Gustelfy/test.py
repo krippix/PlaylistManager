@@ -17,68 +17,136 @@ def test():
         if len(sys.argv) >= 2:
             if sys.argv[2] == "api":
                 api()
-                return
             if sys.argv[2] == "merge":
                 merge()
-                return
             if sys.argv[2] == "db":
                 db_connection()
-                return
             if sys.argv[2] == "dbp":
                 dbp()
+            if sys.argv[2] == "obj":
+                objects()
+            if sys.argv[2] == "update":
+                db_update()
         else:
             print("Select test to run.")
     except Exception as e:
         print(e)
         traceback.print_exc()
-        winsound.Beep(440, 500)
-    winsound.Beep(440, 500)
+        amogus()
+        exit()
+    winsound.Beep(523, 300) # C5
+    winsound.Beep(523, 150) # C5
+    winsound.Beep(659, 600) # E5
 
+def db_update():
+    """Testing update of incomplete entries
+    """
+    logger = logging.getLogger("Gustelfy")
+    logger.setLevel(10)
+    logger.debug("amogus")
+    session = prepare()
+
+    #session.db_con.add_album(session.spotify.fetch_album("66Oi1725EJCwCh3NqWcRuL"))
+
+    session.update_database()
+    
 def dbp():
     """Testrun without flask"""
     logger = logging.getLogger("Gustelfy")
     logger.setLevel(10)
-
-    ##testalbum = album.Album("amogus", "amogus", [track.Track("amo_gus", "name", [artist.Artist("i","i",12)])], [artist.Artist("i","i",12)])
-
     # Initialise config object
     settings = config.Config()
-    
     # Connect to database and fix table
     db = database.Database("oracledb").get_db_connection()
-
-    # Create spotify testuser
     usr = user.User("testmanfred")
-
     # Connect to spotify
     spotify = spotify_api.Spotify_api()
-
     user_session = session.Session(usr, spotify, db)
-    
-    user_session.dbp_fill_db()
-    
-    #data = user_session.get_homepage_data()
-    #user_session.commit_favorites_changes(data["changes"])
 
-    #user_session.commit_favorites_changes(user_session.get_favorites_changes())
+    # Test database fillup
+    user_session.dbp_fill_db()
+
+    # test of fetch_favorites album bug
+    """
+    testdata = user_session.spotify.fetch_favorites()
+    json_data = user_session.spotify.fetch_favorites(json=True)
+
+    i = 0
+    for fav in testdata:
+        print(fav.get_album())
+        i += 1 
+        if i > 10:
+            break
+
+    if isinstance(json_data, dict):
+        with open('test.json', 'w') as amogus:
+            json.dump(json_data,amogus,indent=3)
+            print("result written to test.json")
+    return
+    """
+def objects():
+    """testing different objects"""
+    user_session = prepare()
+
+    #
+    test_artist = artist.Artist(
+        id         = "11111_test",
+        name       = "11111_test",
+        genres     = ["test_genre1","test_genre2"],
+        images     = [{"height":64,"url":"https://www.scdn.co/i/_global/favicon.png","width":64}],
+        popularity = 69,
+        followers  = 420
+    )
+
+    test_track = track.Track(
+        id           = "11111_test",
+        name         = "TEST_TRACK",
+        artists      = [test_artist],
+        duration_ms  = 123456,
+        album_id     = "11111_test",
+        disc_number  = 1,
+        track_number = 1,
+        explicit     = True,
+        popularity   = 34
+    )
+    
+    test_album = album.Album(
+        id           = "11111_test",
+        name         = "TEST_ALBUM",
+        artists      = [test_artist],
+        tracks       = [test_track],
+        images       = [{"height":64,"url":"https://www.scdn.co/i/_global/favicon.png","width":64}],
+        release_date = "2021-01-01",
+        total_tracks = 1,
+        popularity   = 69
+    )
+    #print(test_album)
+    #user_session.db_con.add_album(test_album)
+    #user_session.db_con.add_artist(test_artist)
+    user_session.db_con.add_track(test_track)
+    return
 
 def api():
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger("Gustelfy")
+    logger.setLevel(10)
     settings = config.Config()
     spotify = spotify_api.Spotify_api()
     result = {}
     
     # Turbo thomas: 2vWnOXI1ALzlvNTdjVPMG1
     # Rap über hass: 21ownMQ51Jqlv8si9CTI6R
-    #result = spotify.fetch_track('21ownMQ51Jqlv8si9CTI6R')
-    #result = spotify.fetch_album("1kTlYbs28MXw7hwO0NLYif")
-    #result = spotify.fetch_artist("1ehBmvzykgp3Il0BUIZdev",json=True)
+    #result = spotify.fetch_track('21ownMQ51Jqlv8si9CTI6R',json=True)
+    #result = spotify.fetch_album("1kTlYbs28MXw7hwO0NLYif",json=True)
+    result = spotify.fetch_artist("1ehBmvzykgp3Il0BUIZdev",json=True)
+    result_o = spotify.fetch_artist("1ehBmvzykgp3Il0BUIZdev")
     #result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH",json=True)
     #result = spotify.fetch_playlist("5JfpaSo0hvoRdGRYFrEP3x",json=True) # wtf?
     #result = spotify.amogus("5JfpaSo0hvoRdGRYFrEP3x")
     #result = spotify.fetch_favorites(json=True)
     #result = spotify.fetch_playlists(json=True)
     #result = spotify.fetch_user(json=True)
+    #result = spotify.fetch_playlist_tracks("349T3IRkkkTyBc1SqyP1JH",json=True)
+    print(result_o.get_followers())
     with open('test.json', 'w') as amogus:
         json.dump(result,amogus,indent=3)
         print("result written to test.json")
@@ -112,6 +180,34 @@ def merge():
     print(
         f"{mogus.get_id()} {mogus.get_artists()} {mogus.get_name()} {mogus.get_timestamp()} {mogus.get_duration_ms()} {mogus.is_expired()} {mogus.get_popularity()} {mogus.get_track_number()}"
     )
+
+def amogus():
+    """sus
+    """
+    winsound.Beep(523, 300) # C5
+    winsound.Beep(622, 300) # E5 flat
+    winsound.Beep(698, 300) # F5
+    winsound.Beep(740, 300) # G5 flat
+    winsound.Beep(698, 300) # F5
+    winsound.Beep(622, 300) # E5 flat
+    winsound.Beep(523, 300) # C5
+    time.sleep(0.6)
+    winsound.Beep(466, 150) # B4 flat
+    winsound.Beep(587, 150) # D5
+    winsound.Beep(523, 300) # C5
+
+def prepare() -> session.Session:
+    logger = logging.getLogger("Gustelfy")
+    logger.setLevel(10)
+    # Initialise config object
+    config.Config()
+    # Connect to database and fix table
+    db = database.Database("oracledb").get_db_connection()
+    usr = user.User("testmanfred")
+    # Connect to spotify
+    spotify = spotify_api.Spotify_api()
+    return session.Session(usr, spotify, db)
+
 
 def db_connection():
     "pyhton -m Gustelfy db"
