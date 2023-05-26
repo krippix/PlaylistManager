@@ -61,6 +61,31 @@ async def amogus():
     """
     return {"amogus" : "sus"}
 
+
+@app.get("/playlists")
+async def get_playlists(user_id: str):
+    """Returns playlists the user owns
+
+    Returns:
+        _description_
+    """
+    u_session = session.Session(user_id, spotify, db_con)
+    playlists_dict = [x.as_dict() for x in u_session.get_playlists()]
+    return playlists_dict
+
+
+@app.get("/update")
+async def update(user_id: str):
+    """Updates local data of the user and updates playlists
+
+    Args:
+        user_id: _description_
+
+    Returns:
+        _description_
+    """
+
+
 @app.get("/favorite_diff")
 async def favorite_diff(user_id: str):
     """Returns changes of the users favorites
@@ -68,8 +93,10 @@ async def favorite_diff(user_id: str):
     usr_session = session.Session(user_id, spotify, db_con)
 
     data = usr_session.get_favorites_changes()
+    added   = [x.as_dict() for x in data[0]]
+    removed = [x.as_dict() for x in data[1]]
 
-    return {"added":data[0],"removed":data[1]}
+    return {"added":added, "removed":removed}
 
 
 """

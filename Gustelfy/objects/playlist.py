@@ -7,84 +7,60 @@ from Gustelfy.objects import track
 
 class Playlist(spotifyObject.SpotifyObject):
     
-    owner_id: str
     managed: bool
     tracks = []
-    description: str
-    image_url: str
     genres: list[str]
     
     def __init__(self, 
                 id: str, 
                 name: str,
-                owner_id: str,
-                tracks=[],
-                managed=0,
-                timestamp=int(time.time()),
-                user_id=None,
-                description=None,
-                image_url=None,
-                genres=[]
+                tracks    = [],
+                managed   = False,
+                timestamp = int(time.time()),
+                genres    = []
                 ):
         """Creates a Spotify Playlist object
 
         Args:
             - id (str): Spotify ID
             - name (str): Name
-            - description (str): Playlist Description
-            - user_id (str): user following playlist
-            - owner_id (str): Playlist Creator ID
             - tracks (list, optional): Playlist tracks. Defaults to [].
             - managed (int, optional): Managed flag (for this software)
             - timestamp (int, optional): Defaults to int(time.time()).
-            - image_url (str, optional): Image URL.
             - genres (list, optional): Genres (For management).
         """
         self.set_id(id)
         self.set_name(name)
         self.set_timestamp(timestamp)
-
-        self.set_user_id(user_id)
-        self.set_owner_id(owner_id)
         self.set_tracks(tracks)
         self.set_managed(managed)
-        self.set_description(description)
-        self.set_image_url(image_url)
         self.set_genres(genres)
+
+    def as_dict(self) -> dict:
+        """Returns self as dict
+        """
+        tracks = [x.as_dict() for x in self.tracks]
+        as_dict = {
+            "id"        : self.id,
+            "name"      : self.name,
+            "genres"    : str(self.genres),
+            "timestamp" : str(self.timestamp),
+            "tracks"    : tracks
+        }
+        return as_dict
 
     # ---- Getter Functions ----
 
-    def get_user_id(self) -> str:
-        return self.user_id
-
-    def get_owner_id(self) -> str:
-        return self.owner_id
-
     def is_managed(self) -> bool:
-        if self.managed:
-            return 1
-        else:
-            return 0
+        return self.managed
 
     def get_tracks(self) -> list[track.Track]:
         return self.tracks
-
-    def get_description(self) -> str:
-        return self.description
-
-    def get_image_url(self) -> str:
-        return self.image_url
 
     def get_genres(self) -> list[str]:
         return self.genres
 
     # ---- Setter Functions ----
-
-    def set_user_id(self, user_id: str):
-        self.user_id = user_id
-
-    def set_owner_id(self, owner_id: str):
-        self.owner_id = owner_id
 
     def set_tracks(self, tracks: list[track.Track]):
         self.tracks = tracks
@@ -92,12 +68,6 @@ class Playlist(spotifyObject.SpotifyObject):
     def set_managed(self, is_managed: bool):
         self.managed = is_managed
 
-    def set_description(self, description: str):
-        self.description = description
-
-    def set_image_url(self, url: str):
-        self.image_url = url
-    
     def set_genres(self, genres: list[str]):
         self.genres = genres
 
@@ -117,8 +87,6 @@ class Playlist(spotifyObject.SpotifyObject):
         if self.get_id() != other.get_id():
             return False
         if self.get_name() != other.get_name():
-            return False
-        if self.get_owner_id() != other.get_owner_id():
             return False
         if self.is_managed() != other.is_managed():
             return False
@@ -160,9 +128,6 @@ class Playlist(spotifyObject.SpotifyObject):
             self.set_name(new.get_name())
         # timestamp
         self.set_timestamp(new.get_timestamp())
-        # owner_id
-        if new.get_owner_id() != old.get_owner_id():
-            self.set_owner_id(new.get_owner_id())
         # managed
         if new.is_managed() is None:
             self.set_managed(old.is_managed())
@@ -178,16 +143,6 @@ class Playlist(spotifyObject.SpotifyObject):
             if not match:
                 tracks.append(n_trk)
         self.set_tracks(tracks)
-        # description
-        if new.get_description() is None:
-            self.set_description(old.get_description())
-        else:
-            self.set_description(new.get_description())
-        # image_url
-        if new.get_image_url() is None:
-            self.set_image_url(old.get_image_url())
-        else:
-            self.set_image_url(new.set_image_url())
         # genres
         if len(new.get_genres()) == 0:
             self.set_genres(old.get_genres())

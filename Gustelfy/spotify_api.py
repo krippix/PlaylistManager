@@ -121,7 +121,7 @@ class Spotify_api:
         return artist_result
 
     def fetch_playlists(self, json=False) -> list[playlist.Playlist]:
-        """Returns list of the users playlists
+        """Returns useres **owned** playlists
 
         Args:
             json (bool, optional): Returns json result. Defaults to False.
@@ -131,6 +131,8 @@ class Spotify_api:
         """
         self.logger.debug(f"fetch_playlists()")
 
+        user_id = self.get_user_id()
+
         # Return raw json
         if json:
             return self.spotify.current_user_playlists(limit=50,offset=0)
@@ -138,23 +140,21 @@ class Spotify_api:
         # fetch all playlists
         done = False
         offset = 0
+        valid_lists = 0
         playlist_list = []
         while not done:
             results = self.spotify.current_user_playlists(limit=50,offset=offset)
+            valid_lists = results["total"]
             # Append Playlists
             for lst in results["items"]:
-                if len(lst["images"]) != 0:
-                    image_url = lst["images"][0]["url"]
+                if lst["owner"]["id"] == user_id:
+                    playlist_list.append(playlist.Playlist(
+                        id   = lst["id"],
+                        name = lst["name"]
+                    ))
                 else:
-                    image_url = None
-                playlist_list.append(playlist.Playlist(
-                    id=lst["id"],
-                    name=lst["name"],
-                    owner_id=lst["owner"]["id"],
-                    user_id=self.get_user_id(),
-                    image_url=image_url
-                ))
-            if len(playlist_list) >= results["total"]:
+                    valid_lists -= 1
+            if len(playlist_list) >= valid_lists:
                 done = True
             offset += 50
         return playlist_list
@@ -179,19 +179,11 @@ class Spotify_api:
             return result
         # Get tracks seperately, because they contain more details that way
         playlist_tracks = self.fetch_playlist_tracks(playlist_id)
-        if len(result["images"]) == 0:
-            image_url = None
-        else:
-            image_url = result["images"][0]["url"]
-
         try:
             playlist_result = playlist.Playlist(
                 id          = playlist_id,
                 name        = result["name"],
-                owner_id    = result["owner"]["id"],
-                tracks      = playlist_tracks,
-                description = result["description"],
-                image_url   = image_url
+                tracks      = playlist_tracks
             )
         except Exception as e:
             print(result)

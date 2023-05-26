@@ -67,7 +67,9 @@ class Session:
         '''Kicks off updates of the users local playlists, returns current state of them.'''
         self.logger.debug(f"get_playlists()")
 
-        self.update_playlists()
+        online_playlists = self.spotify.fetch_playlists()
+
+        return online_playlists
 
     # ---- Setter Functions ----
 
@@ -148,7 +150,7 @@ class Session:
         '''Pulls current playlist state from spotify api, updates local db entry.'''
         self.logger.debug(f"update_playlists()")
 
-        online_playlists = self.spotify.fetch_playlists()
+       
         db_playlists = self.db_con.get_playlists(self.user_id)
         
 
