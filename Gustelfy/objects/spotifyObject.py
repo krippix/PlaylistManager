@@ -14,7 +14,7 @@ class SpotifyObject(ABC):
     expires_after = 60*60*4 # time in seconds
 
     @abstractmethod
-    def __init__():
+    def __init__(self):
         pass
 
     def __eq__(self, other):
@@ -28,6 +28,11 @@ class SpotifyObject(ABC):
 
     def __repr__(self):
         return self.__str__()
+    
+    @abstractmethod
+    def as_dict(self) -> dict:
+        """Returns self as dict
+        """
 
     # ---- Getter Functions ----
 

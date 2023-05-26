@@ -31,6 +31,18 @@ class Track(spotifyObject.SpotifyObject):
         self.set_timestamp(timestamp)
         self.set_artists(artists)  
 
+    def as_dict(self) -> dict:
+        """Returns self as dict
+        """
+        dict_artists = [x.as_dict() for x in self.artists]
+
+        dict_obj = {
+            "id"      : self.id,
+            "name"    : self.name,
+            "artists" : dict_artists
+        }
+        return dict_obj
+
     # ---- Getter Functions ----
 
     def get_artists(self) -> list[artist.Artist]:

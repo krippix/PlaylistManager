@@ -16,10 +16,7 @@ class Artist(spotifyObject.SpotifyObject):
                 id: str,
                 name: str,
                 genres=[],
-                timestamp=int(time.time()),
-                images=[],
-                popularity=None,
-                followers=None
+                timestamp=int(time.time())
                 ):
         """Creates Spotify Artist object
 
@@ -28,57 +25,33 @@ class Artist(spotifyObject.SpotifyObject):
             name: _description_
             timestamp: _description_. Defaults to int(time.time()).
             genres: _description_. Defaults to [].
-            images: _description_. Defaults to [].
-            popularity: _description_. Defaults to None.
-            followers: _description_. Defaults to None.
         """
         self.set_id(id)
         self.set_name(name)
         self.set_timestamp(timestamp)
 
         self.set_genres(genres)
-        self.set_images(images)
-        self.set_popularity(popularity)
-        self.set_followers(followers)
+
+    def as_dict(self) -> dict:
+        """Returns self as dict
+        """
+        as_dict = {
+            "id"        : self.id,
+            "name"      : self.name,
+            "genres"    : str(self.genres),
+            "timestamp" : str(self.timestamp)
+        }
+        return as_dict
 
     # ---- Getter Functions ----
 
     def get_genres(self) -> list[str]:
         return self.genres
 
-    def get_images(self) -> list[dict]:
-        return self.images
-    
-    def get_image_url(self) -> str:
-        """Returns first found image url
-
-        Returns:
-            str: image url
-        """
-        try:
-            return self.images[0]["url"]
-        except IndexError:
-            return None
-
-    def get_popularity(self) -> int:
-        return self.popularity
-
-    def get_followers(self) -> int:
-        return self.followers
-
     # ---- Setter Functions ----
 
     def set_genres(self, genres: list[str]):
         self.genres = genres
-
-    def set_images(self, images: list[tuple()]):
-        self.images = images
-
-    def set_popularity(self, popularity: int):
-        self.popularity = popularity
-    
-    def set_followers(self, followers: int):
-        self.followers = followers
 
     # ---- Other Functions ----
 
@@ -142,19 +115,5 @@ class Artist(spotifyObject.SpotifyObject):
             if n_genre not in genres:
                 genres.append(n_genre)
         self.set_genres(genres)
-        # images
-        if len(new.get_images()) != 0:
-            self.set_images(new.get_images())
-        else:
-            self.set_images(old.get_images())
-        # popularity
-        if new.get_popularity() is None:
-            self.set_popularity(old.get_popularity())
-        else:
-            self.set_popularity(new.get_popularity())
-        # followers
-        if new.get_followers() is None:
-            self.set_popularity(old.get_popularity())
-        else:
-            self.set_popularity(new.get_popularity())
+
         return self
