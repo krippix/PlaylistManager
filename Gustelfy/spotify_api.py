@@ -1,9 +1,12 @@
 # external
 import spotipy
+from spotipy import CacheHandler
+from requests import ReadTimeout
 # python native
 import logging
 import time
 # project
+from Gustelfy.database import database
 from Gustelfy.util import config
 from Gustelfy.objects import album, artist, playlist, track, user
 
@@ -11,23 +14,24 @@ from Gustelfy.objects import album, artist, playlist, track, user
 class Spotify_api:
     """Class handling the spotify connection
     """
-
     spotify: spotipy.Spotify
     settings: config.Config
+    user: user.User
     client_id: str
     client_secret: str
     scopes = [
-            "user-library-read",
             "user-library-modify",
+            "user-library-read",
             "playlist-read-private",
             "playlist-modify-private",
             "playlist-read-collaborative",
             "playlist-modify-public"
         ]
 
-    def __init__(self):
+    def __init__(self, user=None):
         # fetch credentials from config.ini
         self.logger = logging.getLogger(__name__)
+        self.logger.debug(f"__init__()")
         self.settings = config.Config()
         self.client_id = self.settings.get_config("AUTH","client_id")
         self.client_secret = self.settings.get_config("AUTH","client_secret")
@@ -48,6 +52,7 @@ class Spotify_api:
 
     def check_credentials(self):
         '''Checks if any credentials have been provided in config.ini'''
+        self.logger.debug(f"check_credentials()")
         missing_credentials = False
         
         if len(self.client_id) == 0:
@@ -70,7 +75,15 @@ class Spotify_api:
 
     def get_user_id(self) -> str:
         '''Returns current user's spotify id.'''
-        return self.spotify.current_user()["id"]
+        retry = 0
+        while True:
+            try:
+                return self.spotify.current_user()["id"]
+            except ReadTimeout as e:
+                time.sleep(1+2*retry)
+                retry += 1
+                if retry > 4:
+                    raise e
 
 
     def get_display_name(self) -> str:
@@ -83,24 +96,30 @@ class Spotify_api:
 
     # -- Fetch --
 
-    def fetch_album(self, album_id: str) -> album.Album:
+    def fetch_album(self, album_id: str, json=False) -> album.Album:
+        """Pulls album information an track information
+
+        Args:
+            album_id (str): Spotify ID of the album to fetch
+            json (bool, optional): _description_. Defaults to False.
+
+        Returns:
+            album.Album: _description_
+        """
         self.logger.debug(f"fetch_album({album_id})")
         try:
             result = self.spotify.album(album_id)
         except Exception as e:
-            logging.error(f"Album with id '{album_id}' not found.\n{e}")
+            self.logger.error(f"Album with id '{album_id}' not found.\n{e}")
             return None
+        if json:
+            return result
     
         # get artists
         artist_list = []
         for art in result["artists"]:
             artist_list.append(artist.Artist(id=art["id"],name=art["name"]))
 
-        # get images
-        image_list = []
-        for img in result["images"]:
-            image_list.append((img["height"],img["url"],img["width"]))
-        
         # get Tracks
         # TODO: handle more than 50 tracks in single album
         album_tracks = []
@@ -110,37 +129,37 @@ class Spotify_api:
             for trk_art in trk["artists"]:
                 trk_artists.append(artist.Artist(id=trk_art["id"],name=trk_art["name"]))
             album_tracks.append(track.Track(
-                id=trk["id"],
-                name=trk["name"],
-                artists=trk_artists,
-                disc_number=trk["disc_number"],
-                duration_ms=trk["duration_ms"],
-                explicit=trk["explicit"],
-                track_number=trk["track_number"]
+                id           = trk["id"],
+                name         = trk["name"],
+                artists      = trk_artists,
+                album_id     = album_id,
+                disc_number  = trk["disc_number"],
+                duration_ms  = trk["duration_ms"],
+                explicit     = trk["explicit"],
+                track_number = trk["track_number"]
             ))
         # Build album object
         result_album = album.Album(
-            id=album_id,
-            artists=artist_list,
-            images=image_list,
-            name=result["name"],
-            popularity=result["popularity"],
-            release_date=result["release_date"],
-            total_tracks=result["total_tracks"]
+            id           = album_id,
+            name         = result["name"],
+            artists      = artist_list,
+            tracks       = album_tracks,
+            images       = result["images"],
+            release_date = result["release_date"],
+            total_tracks = result["total_tracks"],
+            popularity   = result["popularity"]
         )
         return result_album
     
-    def fetch_artist(self, artist_id: str) -> artist.Artist:
+    def fetch_artist(self, artist_id: str, json=False) -> artist.Artist:
         self.logger.debug(f"fetch_artist({artist_id})")
         try:
             result = self.spotify.artist(artist_id)
         except Exception as e:
             self.logger.error(f"Artist with id '{artist_id}' not found.\n{e}")
             return None
-        # Get images
-        img_list = []
-        for img in result["images"]:
-            img_list.append((img["height"],img["url"],img["width"]))
+        if json:
+            return result
         # Get Genres
         genre_list = []
         for gnr in result["genres"]:
@@ -150,13 +169,61 @@ class Spotify_api:
             id=artist_id,
             name=result["name"],
             genres=genre_list,
-            images=img_list,
+            images=result["images"],
             popularity=result["popularity"],
             followers=result["followers"]["total"]
         )
         return artist_result
 
+    def fetch_playlists(self, json=False) -> list[playlist.Playlist]:
+        """Returns list of the users playlists
+
+        Args:
+            json (bool, optional): Returns json result. Defaults to False.
+
+        Returns:
+            list[playlist.Playlist]: list of playlists
+        """
+        self.logger.debug(f"fetch_playlists()")
+
+        # Return raw json
+        if json:
+            return self.spotify.current_user_playlists(limit=50,offset=0)
+
+        # fetch all playlists
+        done = False
+        offset = 0
+        playlist_list = []
+        while not done:
+            results = self.spotify.current_user_playlists(limit=50,offset=offset)
+            # Append Playlists
+            for lst in results["items"]:
+                if len(lst["images"]) != 0:
+                    image_url = lst["images"][0]["url"]
+                else:
+                    image_url = None
+                playlist_list.append(playlist.Playlist(
+                    id=lst["id"],
+                    name=lst["name"],
+                    owner_id=lst["owner"]["id"],
+                    user_id=self.get_user_id(),
+                    image_url=image_url
+                ))
+            if len(playlist_list) >= results["total"]:
+                done = True
+            offset += 50
+        return playlist_list
+
     def fetch_playlist(self, playlist_id: str,json=False) -> playlist.Playlist:
+        """Returns Playlist and it's songs
+
+        Args:
+            playlist_id (str): Spotify Playlist id
+            json (bool, optional): Returns raw api result. Defaults to False.
+
+        Returns:
+            playlist.Playlist: _description_
+        """
         self.logger.debug(f"fetch_playlist({playlist_id})")
         try:
             result = self.spotify.playlist(playlist_id)
@@ -166,25 +233,49 @@ class Spotify_api:
         if json:
             return result
         # Get tracks seperately, because they contain more details that way
-        playlist_tracks = self.__fetch_playlist_tracks(playlist_id)
-        
-        playlist_result = playlist.Playlist(
-            id=playlist_id,
-            name=result["name"],
-            creator_id=result["owner"]["id"],
-            tracks=playlist_tracks,
-            description=result["description"],
-            image_url=result["images"][0]["url"],
-        )
+        playlist_tracks = self.fetch_playlist_tracks(playlist_id)
+        if len(result["images"]) == 0:
+            image_url = None
+        else:
+            image_url = result["images"][0]["url"]
+
+        try:
+            playlist_result = playlist.Playlist(
+                id          = playlist_id,
+                name        = result["name"],
+                owner_id    = result["owner"]["id"],
+                tracks      = playlist_tracks,
+                description = result["description"],
+                image_url   = image_url
+            )
+        except Exception as e:
+            print(result)
+            print(f"Bruh wtf: {e}")
         return playlist_result
 
-    def __fetch_playlist_tracks(self, playlist_id: str) -> list[track.Track]:
-        result = {"total":1}
+    def fetch_playlist_tracks(self, playlist_id: str, json=False) -> list[track.Track]:
+        """Gets detailed playlist track information
+
+        Args:
+            playlist_id (str): _description_
+
+        Returns:
+            list[track.Track]: _description_
+        """
+        self.logger.debug(f"__fetch_playlist_tracks({playlist_id}, {json})")
+        if json:
+            return self.spotify.playlist_tracks(playlist_id)
+        done = False
         offset = 0
         track_list = []
-        while len(track_list) < result["total"]:
+        while not done:            
             result = self.spotify.playlist_tracks(playlist_id,offset=offset)
+
             for item in result["items"]:
+                # I have no clue why this can happen, but it does
+                if item["track"] is None:
+                    result["total"] -= 1
+                    continue
                 # Get track artists
                 track_artists = []
                 for art in item["track"]["artists"]:
@@ -199,27 +290,24 @@ class Spotify_api:
                         id=art["id"],
                         name=art["name"]
                     ))
-                # Get track album
-                track_album = album.Album(
-                    id=item["track"]["album"]["id"],
-                    name=item["track"]["album"]["name"],
-                    artists=album_artists
-                )
                 track_list.append(track.Track(
                     id=item["track"]["id"],
                     name=item["track"]["name"],
                     artists=track_artists,
                     duration_ms=item["track"]["duration_ms"],
-                    album=track_album,
+                    album_id=item["track"]["album"]["id"],
                     disc_number=item["track"]["disc_number"],
                     track_number=item["track"]["track_number"],
                     explicit=item["track"]["explicit"],
                     popularity=item["track"]["popularity"]
                 ))
-            offset += 100
+            if len(track_list) == result["total"]:
+                done = True
+            else:
+                offset += 100
         return track_list
     
-    def fetch_track(self, track_id: str) -> track.Track:
+    def fetch_track(self, track_id: str, json=False) -> track.Track:
         """Fetches detailed track information from Spotify database, rudimentary artist and album information.
 
         Args:
@@ -234,6 +322,8 @@ class Spotify_api:
         except Exception as e:
             logging.error(f"Track with id '{track_id}' not found.\n{e}")
             return None
+        if json:
+            return result
 
         # add artists ids into list
         artists = []
@@ -246,112 +336,118 @@ class Spotify_api:
         for album_artist in result["album"]["artists"]:
             album_artists.append(artist.Artist(id=album_artist["id"],name=album_artist["name"]))
 
-        # Create album images
-        album_image_list = []
-        for image in result["album"]["images"]:
-            album_image_list.append((image["height"],image["url"],image["width"]))
-
         # Build album to append
         tr_album = album.Album(
-            id=result["album"]["id"],
-            name=result["album"]["name"],
-            artists=artists,
-            total_tracks=result["album"]["total_tracks"],
-            images=album_image_list
+            id           = result["album"]["id"],
+            name         = result["album"]["name"],
+            artists      = artists,
+            total_tracks = result["album"]["total_tracks"],
+            images       = result["album"]["images"],
+            release_date = result["album"]["release_date"]
         )
         result_track = track.Track(
-            id=track_id,
-            name=result["name"],
-            artists=artists,
-            duration_ms=result["duration_ms"],
-            album=tr_album,
-            disc_number=result["disc_number"],
-            track_number=result["track_number"],
-            explicit=result["explicit"],
-            popularity=result["popularity"]
+            id           = track_id,
+            name         = result["name"],
+            artists      = artists,
+            duration_ms  = result["duration_ms"],
+            album        = tr_album,
+            disc_number  = result["disc_number"],
+            track_number = result["track_number"],
+            explicit     = result["explicit"],
+            popularity   = result["popularity"]
         ) 
         return result_track
     
-    def fetch_favorites(self) -> list[track.Track]:
-        '''Takes all tracks from users favorites and returns them as List of track objects'''
-        result_list = []
+    def fetch_favorites(self, json=False) -> list[track.Track]:
+        """Get list of favorites a user has aquired
+
+        Args:
+            json (bool, optional): return raw json instead of a spotify object. Defaults to False.
+
+        Returns:
+            list[track.Track]: _description_
+        """
+        # json result for debugging
+        if json:
+            return self.spotify.current_user_saved_tracks(limit=50)
 
         # fetch favorites
         done = False
         offset = 0
-
-        # iterate over favorites
+        track_list = []
         while not done:
             results = self.spotify.current_user_saved_tracks(limit=50,offset=offset)
-
-            if len(results["items"]) < 50:
+            for trk in results["items"]:
+                # Get album artists
+                album_artists = []
+                for art in trk["track"]["album"]["artists"]:
+                    album_artists.append(artist.Artist(
+                        id=art["id"],
+                        name=art["name"]
+                    ))
+                # get track artists
+                trk_artists = []
+                for art in trk["track"]["artists"]:
+                    trk_artists.append(artist.Artist(
+                        id   = art["id"],
+                        name = art["name"]
+                    ))
+                # create track object
+                track_list.append(track.Track(
+                    id           = trk["track"]["id"],
+                    name         = trk["track"]["name"],
+                    artists      = trk_artists,
+                    duration_ms  = trk["track"]["duration_ms"],
+                    album_id     = trk["track"]["album"]["id"],
+                    track_number = trk["track"]["track_number"],
+                    explicit     = trk["track"]["explicit"],
+                    popularity   = trk["track"]["popularity"]
+                ))
+            if offset >= results["total"]:
                 done = True
-            
-            for song in results["items"]:
-                song = song["track"]
-                
-                # put artists into one list
-                artists = []
-                for curr_artist in song["artists"]:
-                    artists.append(artist.Artist(curr_artist["id"],curr_artist["name"], timestamp=int(time.time())))
-                
-                result_list.append(track.Track(id=song["id"],name=song["name"],artists=artists, timestamp=int(time.time())))
-            offset += 50
-        
-        return result_list
-
-
-    def fetch_playlists(self) -> list[playlist.Playlist]:
-        '''Returns a list of the users created playlists.'''
-        self.logger.debug(f"fetch_playlists()")
-        
-        result_list = []
-        current_user_id = self.spotify.current_user()["id"]
-
-        # fetch all playlists
-        done = False
-        offset = 0
-
-        # iterate over playlist collection
-        while not done:
-            results = self.spotify.current_user_playlists(limit=50,offset=offset)
-
-            if len(results["items"]) < 50:
-                done = True
-
-            for item in results["items"]:
-                if item["owner"]["id"] == current_user_id:
-                    result_list.append(playlist.Playlist(id=item["id"], name=item["name"], owner_id=current_user_id))
-
-        return result_list
-
+            else:
+                offset += 50
+        return track_list
     
-    def fetch_playlist_songs(self, playlist_id: str) -> list[track.Track]:
-        '''Returns list of songs in given playlist.'''
-        self.logger.debug(f"fetch_playist_songs({playlist_id})")
+    def fetch_current_user(self, json=False) -> user.User:
+        """Returns detailed spotify user object.
+
+        Returns:
+            user.User: _description_
+        """
+        result = self.spotify.current_user()
+        if json:
+            return result
+        user_result = user.User(
+            id=result["id"],
+            display_name=result["display_name"],
+            image_url=result["images"][0]["url"],
+            followers=result["followers"]["total"]
+        )
+        return user_result
+
+class CacheDatabaseHandler(CacheHandler):
+    """
+    Implements CacheHandler for using SQL databases
+    """
+    def __init__(self, database: database.Database, user_id: str):
+        self.logger = logging.getLogger(__name__)
+        self.database = database
+        self.user_id = user_id
         
-        tracks = []
 
-        api_result = self.spotify.playlist_tracks(playlist_id=playlist_id)
-
-        for track in api_result["item"]:
-            # Handle artists in track
-            artists = []
-            for artist in track["track"]["artists"]:
-                artists.append(artist.Artist(id=artist["id"],name=artist["name"],timestamp=int(time.time())))
-            # Create final track object
-            tracks.append(track.Track(id=track["track"]["id"],name=track["track"]["name"],artists=artists,timestamp=int(time.time())))
-        
-        return tracks
-
-
-    def add_genres(self, artist: artist.Artist) -> artist.Artist:
-        '''adds genres to artist object'''
-        result = self.spotify.artist(artist.get_id())
-        artist.set_genres = result["genres"]
-        return artist
-
-
+    def get_cached_token(self):
+        token_info = None
+        try:
+            token_info = self.database.get_token(self.user_id)
+        except Exception as e:
+            self.logger.error(f"Failed to retrieve API token for user: {e}")
+        return token_info
+    
+    def save_token_to_cache(self, token_info):
+        self.database.set_token(self.user_id,token_info)
+    
+    
 if __name__ == "__main__":
     logging.error("This file is not supposed to be executed.")
     exit()

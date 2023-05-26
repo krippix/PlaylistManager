@@ -11,8 +11,8 @@ class Track(spotifyObject.SpotifyObject):
     """
 
     artists = []
-    duration: int
-    album: str
+    duration_ms: int
+    album_id: str
     disc_number: int
     track_number: int
     explicit: bool
@@ -24,18 +24,32 @@ class Track(spotifyObject.SpotifyObject):
                 artists: list[artist.Artist],
                 timestamp=int(time.time()),
                 duration_ms=None,
-                album=None,
+                album_id=None,
                 disc_number=None,
                 track_number=None,
                 explicit=None,
                 popularity=None,
                 ):
+        """Creates Spotify track object
+
+        Args:
+            id: _description_
+            name: _description_
+            artists: _description_
+            timestamp: _description_. Defaults to int(time.time()).
+            duration_ms: _description_. Defaults to None.
+            album_id: _description_. Defaults to None.
+            disc_number: _description_. Defaults to None.
+            track_number: _description_. Defaults to None.
+            explicit: _description_. Defaults to None.
+            popularity: _description_. Defaults to None.
+        """
         self.set_id(id)
         self.set_name(name)
         self.set_timestamp(timestamp)
         self.set_artists(artists)
-        self.set_duration(duration_ms)
-        self.set_album(album)
+        self.set_duration_ms(duration_ms)
+        self.set_album_id(album_id)
         self.set_disc_number(disc_number)
         self.set_track_number(track_number)
         self.set_explicit(explicit)
@@ -51,16 +65,16 @@ class Track(spotifyObject.SpotifyObject):
         """
         return self.artists
 
-    def get_duration(self) -> int:
+    def get_duration_ms(self) -> int:
         """Returns track's duration in ms
 
         Returns:
             int: duration in ms
         """
-        return self.duration
+        return self.duration_ms
 
-    def get_album(self) -> 'album.Album':
-        return self.album
+    def get_album_id(self) -> str:
+        return self.album_id
 
     def get_disc_number(self) -> int:
         return self.disc_number
@@ -72,12 +86,9 @@ class Track(spotifyObject.SpotifyObject):
         """Returns bool value of explicity as int 1 or 0
 
         Returns:
-            int: 0 || 1
+            bool:
         """
-        if self.explicit:
-            return 1
-        else:
-            return 0
+        return self.explicit
     
     def get_popularity(self) -> int:
         return self.popularity
@@ -86,20 +97,24 @@ class Track(spotifyObject.SpotifyObject):
    
     def set_artists(self, artists: list):
         '''Takes a list of artists and sets them for the track object'''
-        self.artists = []
-        for artist in artists:
-            self.artists.append(artist)
+        if artists is None:
+            raise TypeError
+        else:
+            self.artists = artists
 
-    def set_duration(self, duration: int):
+    def set_duration_ms(self, duration: int):
         """Sets track's duration in ms
 
         Args:
             duration (int): duration in ms
         """
-        self.duration = duration
+        self.duration_ms = duration
 
-    def set_album(self, album: 'album.Album'):
-        self.album_id = album
+    def set_album_id(self, album_id: str):
+        if album_id is None:
+            raise TypeError("None not allowed")
+        else:
+            self.album_id = album_id
 
     def set_disc_number(self, number: int):
         self.disc_number = number
@@ -115,7 +130,7 @@ class Track(spotifyObject.SpotifyObject):
 
     # ---- Other Functions ----
 
-    def is_equal(self, other) -> bool:
+    def is_equal(self, other: 'Track') -> bool:
         """Defines behaviour of the '==' operator
 
         Args:
@@ -124,7 +139,7 @@ class Track(spotifyObject.SpotifyObject):
         Returns:
             bool: whether or not the objects are considered equal
         """
-        if other is None:
+        if other is None or not isinstance(other, Track):
             return False
         if self.get_id() != other.get_id():
             return False
@@ -145,3 +160,78 @@ class Track(spotifyObject.SpotifyObject):
             if not found:
                 return False
         return True
+
+    def merge(self, other: 'Track'):
+        """Merges two track objects to their newest state, takes information out of both for any None values
+
+        Args:
+            other (Track): Track to merge with
+
+        Raises:
+            TypeError: No Track object provided
+
+        Returns:
+            Track: merged track object
+        """
+        # Check wrong input 
+        if not isinstance(other, Track):
+            raise TypeError()
+        if self.get_id() != other.get_id() or other is None:
+            self.logger.error("Cannot merge different Track objects.")
+            return
+        # Check who is "newer"
+        if self.get_timestamp() < other.get_timestamp():
+            new = other
+            old = self
+        else:
+            new = self
+            old = other
+        # name
+        if new.get_name() != old.get_name():
+            self.set_name(new.get_name())
+        # timestamp
+        self.timestamp = new.get_timestamp()
+        # artists
+        # merge artists that are in both objects
+        artist_list = [n_art.merge(o_art) for n_art in new.get_artists() for o_art in old.get_artists() if n_art.get_id() == o_art.get_id()]
+        # add artists that only exist in the new object
+        for n_art in new.get_artists():
+            match = False
+            for art in artist_list:
+                if n_art.get_id() == art.get_id():
+                    match = True
+                    break
+            if not match:
+                artist_list.append(n_art)
+        self.set_artists(artist_list)
+        # duration
+        if new.get_duration_ms() is None and old.get_duration_ms() is not None:
+            self.set_duration_ms(old.get_duration_ms())
+        else:
+            self.set_duration_ms(new.get_duration_ms())
+        # album_id
+        if new.get_album_id() is None:
+            self.set_album_id(old.get_album_id())
+        else:
+            self.set_album_id(new.get_album_id())
+        # disc_number
+        if new.get_disc_number() is None:
+            self.set_disc_number(old.get_disc_number())
+        else:
+            self.set_disc_number(new.get_disc_number())
+        # track_number
+        if new.get_track_number() is None:
+            self.set_track_number(old.get_track_number())
+        else:
+            self.set_track_number(new.get_track_number())
+        # explicit
+        if new.is_explicit() is None:
+            self.set_explicit(old.is_explicit())
+        else:
+            self.set_explicit(new.is_explicit())
+        # popularity
+        if new.get_popularity() is None:
+            self.set_popularity(old.get_popularity())
+        else:
+            self.set_popularity(new.get_popularity())
+        return self

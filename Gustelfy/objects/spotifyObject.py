@@ -8,7 +8,6 @@ from abc import ABC, abstractmethod
 class SpotifyObject(ABC):
     """Base class for all spotify objects.
     """
-
     id: str
     name: str
     timestamp: int
@@ -22,7 +21,10 @@ class SpotifyObject(ABC):
         return self.is_equal(other)
 
     def __str__(self):
-        return self.name
+        if self.name is None:
+            return "None"
+        else:
+            return self.name
 
     def __repr__(self):
         return self.__str__()
@@ -47,19 +49,35 @@ class SpotifyObject(ABC):
     # ---- Setter Functions ----
 
     def set_id(self, id: str):
-        self.id = id
+        if id is None:
+            raise TypeError("None not allowed")
+        else:
+            self.id = id
 
     def set_name(self, name: str):
-        self.name = name
+        if name is None:
+            raise TypeError    
+        else:
+            self.name = name
 
     def set_timestamp(self, timestamp=int(time.time())):
         self.timestamp = timestamp
 
-    def set_expires_after(seconds):
+    def set_expires_after(self, seconds):
         self.expires_after = seconds
     
     # ---- Other Functions ----
 
     @abstractmethod
     def is_equal(self, other):
-        pass
+        pass    
+
+    @abstractmethod
+    def merge(self, other):
+        """Combine information of two different Spotify objects into one.
+        Most recent timestamp wins.
+
+        Args:
+            other (spotifyObject): object to merge with
+        """
+        

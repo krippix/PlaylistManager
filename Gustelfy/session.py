@@ -5,6 +5,7 @@ import time
 # project
 from Gustelfy import spotify_api
 from Gustelfy import database
+from Gustelfy.database import interface
 from Gustelfy.util import config
 from Gustelfy.objects import album, artist, playlist, track, user
 
@@ -13,10 +14,10 @@ class Session:
     '''Entrypoint for any data manipulation. Combines database and spotify API access. This will (probably) represent a user session.'''
     
     spotify: spotify_api.Spotify_api
-    db_con: database.Database
+    db_con: interface.Interface
     user: user.User
 
-    def __init__(self, user: user.User, spotify: spotify_api.Spotify_api, database: database.Database):
+    def __init__(self, user: user.User, spotify: spotify_api.Spotify_api, database: interface.Interface):
         self.spotify = spotify
         self.db_con = database
         self.user = user
@@ -27,17 +28,23 @@ class Session:
 
     # ---- TEMPORARY ASSIGNMENT FUNCTIONS ----
     # Used for my class project, will be removed together with the oracle db connection
-    def fill_db(self):
+    def dbp_fill_db(self):
         # The following have to be satisfied:
+        self.db_con.add_user(self.spotify.fetch_current_user())
         # - favorites -> starting point
+        for favorite in self.spotify.fetch_favorites():
+            self.db_con.add_favorite(self.spotify.get_user_id(),favorite)
         # - album -> from all tracks that exist
         # - artist -> also from existing tracks and albums
         # - playlist -> from user
+        playlists = self.spotify.fetch_playlists()
+        full_playlists = []
+        for pl in playlists:
+            full_playlists.append(self.spotify.fetch_playlist(pl.get_id()))
+        for full_playlist in full_playlists:
+            self.db_con.add_playlist(full_playlist)
         # - track -> pulled from the other objects
-        # - user -> done before using session (hopefully)
         
-        pass
-    
     # ---- Getter Functions ----
 
     def get_homepage_data(self) -> dict:
@@ -98,7 +105,7 @@ class Session:
         return (added,removed)
 
     def get_playlists(self) -> list[playlist.Playlist]:
-        '''Kicks of updates of the users local playlists, returns current state of them.'''
+        '''Kicks off updates of the users local playlists, returns current state of them.'''
         self.logger.debug(f"get_playlists()")
 
         self.update_playlists()
@@ -147,9 +154,31 @@ class Session:
         # pull playlists
 
     def update_database(self):
-        '''Updates all track entries in database. This shouldnt change which songs are in the database but update names and artist information.'''
+        """This fills up all null values in the database and updates old database entries.
+        """
         self.logger.debug("update_database()")
-    
+        result = self.db_con.get_incomplete_all()
+        # albums
+        for alb in result["albums"]:
+            self.logger.info(f"Updating album {alb}")
+            self.db_con.add_album(self.spotify.fetch_album(alb))
+        """
+        # artists
+        for art in result["artists"]:
+            self.logger.info(f"Updating artist {art}")
+            self.db_con.add_artist(self.spotify.fetch_artist(art))
+        # playlists
+        for lst in result["playlists"]:
+            self.logger.info(f"Updating playlist {lst}")
+            self.db_con.add_playlist(self.spotify.fetch_playlist(lst))
+        # tracks
+        for trk in result["tracks"]:
+            self.logger.info(f"Updating track {trk}")
+            self.db_con.add_track(self.spotify.fetch_track(trk))
+        self.logger.info("Updating database finished")
+        """
+        
+
     def update_database_artists(self):
         '''Searches database for outdated artists.'''
         self.logger.debug("update_database_artists()")
