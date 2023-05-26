@@ -1,1 +1,1 @@
-__all__ = ["album","artist","playlist","track","user"]
+__all__ = ["artist","playlist","track","user"]

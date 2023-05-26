@@ -6,7 +6,7 @@ import time
 from Gustelfy import spotify_api
 from Gustelfy import database
 from Gustelfy.util import config
-from Gustelfy.objects import album, artist, playlist, track, user
+from Gustelfy.objects import artist, playlist, track, user
 
 
 class Session:
@@ -14,68 +14,27 @@ class Session:
     
     spotify: spotify_api.Spotify_api
     db_con: database.Database
-    user: user.User
+    user_id: str
 
-    def __init__(self, user: user.User, spotify: spotify_api.Spotify_api, database: database.Database):
+    def __init__(self, user_id: str, spotify: spotify_api.Spotify_api, database: database.Database):
+        self.logger  = logging.getLogger(f"{__name__}:{user_id}")
         self.spotify = spotify
-        self.db_con = database
-        self.user = user
-        self.logger = logging.getLogger(f"{__name__}:{user.get_id()}")
+        self.db_con  = database
+        self.user_id = user_id
         self.logger.info("Initialized session.")
 
-        self.db_con.add_user(self.user)
-
-    # ---- TEMPORARY ASSIGNMENT FUNCTIONS ----
-    # Used for my class project, will be removed together with the oracle db connection
-    def dbp_fill_db(self):
-        # The following have to be satisfied:
-        self.db_con.add_user(self.spotify.fetch_current_user())
-        # - favorites -> starting point
-        for favorite in self.spotify.fetch_favorites():
-            self.db_con.add_favorite(self.spotify.get_user_id(),favorite)
-        # - album -> from all tracks that exist
-        # - artist -> also from existing tracks and albums
-        # - playlist -> from user
-        playlists = self.spotify.fetch_playlists()
-        full_playlists = []
-        for pl in playlists:
-            full_playlists.append(self.spotify.fetch_playlist(pl.get_id()))
-        for full_playlist in full_playlists:
-            self.db_con.add_playlist(full_playlist)
-        # - track -> pulled from the other objects
-        
     # ---- Getter Functions ----
 
-    def get_homepage_data(self) -> dict:
-        '''
-        Returns data needed for homepage. 
-        {
-            display_name: <username>,
-            playlists: [(name,isGenrePlaylist),...],
-            changes: ([added],[removed])
-        }
-        # TODO somehow have to recieve the users decisions from the flask server.
-        '''
-        self.logger.debug("get_homepage_data()")
-
-        result = {
-            "display_name": self.spotify.get_display_name(),
-            "playlists": self.spotify.fetch_playlists(),
-            "changes": self.get_favorites_changes()
-        }
-        return result
-
     def get_favorites_changes(self) -> tuple[list[track.Track],list[track.Track]]:
-        '''Returns tuple of list of changed tracks in favorites: (added,removed)'''
-        self.logger.debug("get_favorites_changes()")
+        """Returns tuple of list of changed tracks in favorites: (added,removed)
+        """
 
-        local_lib = self.db_con.get_favorites(self.user.get_id())
+        local_lib  = self.db_con.get_favorites(self.user_id)
         online_lib = self.spotify.fetch_favorites()
 
         # Creates list of songs that exist in both local and online favorites
         overlap = [local_track for local_track in local_lib for online_track in online_lib if local_track.get_id() == online_track.get_id()]
-
-        added = []
+        added   = []
         removed = []
 
         # Create list of removed tracks
@@ -102,6 +61,7 @@ class Session:
         self.logger.info(f"{len(removed)} tracks have been removed.")
 
         return (added,removed)
+
 
     def get_playlists(self) -> list[playlist.Playlist]:
         '''Kicks off updates of the users local playlists, returns current state of them.'''
@@ -157,10 +117,6 @@ class Session:
         """
         self.logger.debug("update_database()")
         result = self.db_con.get_incomplete_all()
-        # albums
-        for alb in result["albums"]:
-            self.logger.info(f"Updating album {alb}")
-            self.db_con.add_album(self.spotify.fetch_album(alb))
         """
         # artists
         for art in result["artists"]:

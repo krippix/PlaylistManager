@@ -11,5 +11,4 @@ if len(sys.argv) > 1:
     if sys.argv[1] == "test":
         test.test()
 else:
-    print("That doesent work yet :harold:")
-
+    main.run()

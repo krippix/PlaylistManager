@@ -3,7 +3,7 @@
 import time
 # project
 from Gustelfy.objects import spotifyObject
-from Gustelfy.objects import artist, album
+from Gustelfy.objects import artist
 
 
 class Track(spotifyObject.SpotifyObject):
@@ -11,24 +11,12 @@ class Track(spotifyObject.SpotifyObject):
     """
 
     artists = []
-    duration_ms: int
-    album_id: str
-    disc_number: int
-    track_number: int
-    explicit: bool
-    popularity: int
     
     def __init__(self,
                 id: str,
                 name: str,
                 artists: list[artist.Artist],
-                timestamp=int(time.time()),
-                duration_ms=None,
-                album_id=None,
-                disc_number=None,
-                track_number=None,
-                explicit=None,
-                popularity=None,
+                timestamp=int(time.time())
                 ):
         """Creates Spotify track object
 
@@ -37,23 +25,11 @@ class Track(spotifyObject.SpotifyObject):
             name: _description_
             artists: _description_
             timestamp: _description_. Defaults to int(time.time()).
-            duration_ms: _description_. Defaults to None.
-            album_id: _description_. Defaults to None.
-            disc_number: _description_. Defaults to None.
-            track_number: _description_. Defaults to None.
-            explicit: _description_. Defaults to None.
-            popularity: _description_. Defaults to None.
         """
         self.set_id(id)
         self.set_name(name)
         self.set_timestamp(timestamp)
-        self.set_artists(artists)
-        self.set_duration_ms(duration_ms)
-        self.set_album_id(album_id)
-        self.set_disc_number(disc_number)
-        self.set_track_number(track_number)
-        self.set_explicit(explicit)
-        self.set_popularity(popularity)        
+        self.set_artists(artists)  
 
     # ---- Getter Functions ----
 
@@ -65,34 +41,6 @@ class Track(spotifyObject.SpotifyObject):
         """
         return self.artists
 
-    def get_duration_ms(self) -> int:
-        """Returns track's duration in ms
-
-        Returns:
-            int: duration in ms
-        """
-        return self.duration_ms
-
-    def get_album_id(self) -> str:
-        return self.album_id
-
-    def get_disc_number(self) -> int:
-        return self.disc_number
-
-    def get_track_number(self) -> int:
-        return self.track_number
-
-    def is_explicit(self) -> int:
-        """Returns bool value of explicity as int 1 or 0
-
-        Returns:
-            bool:
-        """
-        return self.explicit
-    
-    def get_popularity(self) -> int:
-        return self.popularity
-
     # ---- Setter Functions ----
    
     def set_artists(self, artists: list):
@@ -101,32 +49,6 @@ class Track(spotifyObject.SpotifyObject):
             raise TypeError
         else:
             self.artists = artists
-
-    def set_duration_ms(self, duration: int):
-        """Sets track's duration in ms
-
-        Args:
-            duration (int): duration in ms
-        """
-        self.duration_ms = duration
-
-    def set_album_id(self, album_id: str):
-        if album_id is None:
-            raise TypeError("None not allowed")
-        else:
-            self.album_id = album_id
-
-    def set_disc_number(self, number: int):
-        self.disc_number = number
-
-    def set_track_number(self, track_number: int):
-        self.track_number = track_number
-
-    def set_explicit(self, explicit: bool):
-        self.explicit = explicit
-
-    def set_popularity(self, popularity: int):
-        self.popularity = popularity
 
     # ---- Other Functions ----
 
@@ -204,34 +126,4 @@ class Track(spotifyObject.SpotifyObject):
             if not match:
                 artist_list.append(n_art)
         self.set_artists(artist_list)
-        # duration
-        if new.get_duration_ms() is None and old.get_duration_ms() is not None:
-            self.set_duration_ms(old.get_duration_ms())
-        else:
-            self.set_duration_ms(new.get_duration_ms())
-        # album_id
-        if new.get_album_id() is None:
-            self.set_album_id(old.get_album_id())
-        else:
-            self.set_album_id(new.get_album_id())
-        # disc_number
-        if new.get_disc_number() is None:
-            self.set_disc_number(old.get_disc_number())
-        else:
-            self.set_disc_number(new.get_disc_number())
-        # track_number
-        if new.get_track_number() is None:
-            self.set_track_number(old.get_track_number())
-        else:
-            self.set_track_number(new.get_track_number())
-        # explicit
-        if new.is_explicit() is None:
-            self.set_explicit(old.is_explicit())
-        else:
-            self.set_explicit(new.is_explicit())
-        # popularity
-        if new.get_popularity() is None:
-            self.set_popularity(old.get_popularity())
-        else:
-            self.set_popularity(new.get_popularity())
         return self

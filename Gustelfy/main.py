@@ -1,4 +1,5 @@
 # external
+import uvicorn
 import pydantic
 import fastapi
 import fastapi.middleware.cors
@@ -7,9 +8,8 @@ import spotipy
 import logging
 import sys
 # project
-from Gustelfy import spotify_api, session
-from Gustelfy import database
-from Gustelfy.objects import album, artist, playlist, track, user
+from Gustelfy import spotify_api, database, session, basemodels
+from Gustelfy.objects import artist, playlist, track, user
 from Gustelfy.util import config
 
 
@@ -61,6 +61,17 @@ async def amogus():
     """
     return {"amogus" : "sus"}
 
+@app.get("/favorite_diff")
+async def favorite_diff(user_id: str):
+    """Returns changes of the users favorites
+    """
+    usr_session = session.Session(user_id, spotify, db_con)
+
+    data = usr_session.get_favorites_changes()
+
+    return {"added":data[0],"removed":data[1]}
+
+
 """
 @app.route('/', methods=('GET','POST'))
 def index():
@@ -85,9 +96,12 @@ def index():
     return flask.render_template('index.html', dict=data)
 """
 
-if __name__ == "__main__":
+def run():
     uvicorn.run(
         app       = "main:app",
         log_level = logging.DEBUG,
         reload    = True
     )
+
+if __name__ == "__main__":
+    run()

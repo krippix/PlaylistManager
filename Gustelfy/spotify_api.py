@@ -8,7 +8,7 @@ import time
 # project
 from Gustelfy import database
 from Gustelfy.util import config
-from Gustelfy.objects import album, artist, playlist, track, user
+from Gustelfy.objects import artist, playlist, track, user
 
 
 class Spotify_api:
@@ -95,61 +95,6 @@ class Spotify_api:
     # ---- Other Functions ----
 
     # -- Fetch --
-
-    def fetch_album(self, album_id: str, json=False) -> album.Album:
-        """Pulls album information an track information
-
-        Args:
-            album_id (str): Spotify ID of the album to fetch
-            json (bool, optional): _description_. Defaults to False.
-
-        Returns:
-            album.Album: _description_
-        """
-        self.logger.debug(f"fetch_album({album_id})")
-        try:
-            result = self.spotify.album(album_id)
-        except Exception as e:
-            self.logger.error(f"Album with id '{album_id}' not found.\n{e}")
-            return None
-        if json:
-            return result
-    
-        # get artists
-        artist_list = []
-        for art in result["artists"]:
-            artist_list.append(artist.Artist(id=art["id"],name=art["name"]))
-
-        # get Tracks
-        # TODO: handle more than 50 tracks in single album
-        album_tracks = []
-        for trk in result["tracks"]["items"]:
-            # Add track artists
-            trk_artists = []
-            for trk_art in trk["artists"]:
-                trk_artists.append(artist.Artist(id=trk_art["id"],name=trk_art["name"]))
-            album_tracks.append(track.Track(
-                id           = trk["id"],
-                name         = trk["name"],
-                artists      = trk_artists,
-                album_id     = album_id,
-                disc_number  = trk["disc_number"],
-                duration_ms  = trk["duration_ms"],
-                explicit     = trk["explicit"],
-                track_number = trk["track_number"]
-            ))
-        # Build album object
-        result_album = album.Album(
-            id           = album_id,
-            name         = result["name"],
-            artists      = artist_list,
-            tracks       = album_tracks,
-            images       = result["images"],
-            release_date = result["release_date"],
-            total_tracks = result["total_tracks"],
-            popularity   = result["popularity"]
-        )
-        return result_album
     
     def fetch_artist(self, artist_id: str, json=False) -> artist.Artist:
         self.logger.debug(f"fetch_artist({artist_id})")
@@ -280,26 +225,13 @@ class Spotify_api:
                 track_artists = []
                 for art in item["track"]["artists"]:
                     track_artists.append(artist.Artist(
-                        id=art["id"],
-                        name=art["name"]
-                    ))
-                # Get album artists
-                album_artists = []
-                for art in item["track"]["album"]["artists"]:
-                    album_artists.append(artist.Artist(
-                        id=art["id"],
-                        name=art["name"]
+                        id   = art["id"],
+                        name = art["name"]
                     ))
                 track_list.append(track.Track(
-                    id=item["track"]["id"],
-                    name=item["track"]["name"],
-                    artists=track_artists,
-                    duration_ms=item["track"]["duration_ms"],
-                    album_id=item["track"]["album"]["id"],
-                    disc_number=item["track"]["disc_number"],
-                    track_number=item["track"]["track_number"],
-                    explicit=item["track"]["explicit"],
-                    popularity=item["track"]["popularity"]
+                    id      = item["track"]["id"],
+                    name    = item["track"]["name"],
+                    artists = track_artists
                 ))
             if len(track_list) == result["total"]:
                 done = True
@@ -308,7 +240,7 @@ class Spotify_api:
         return track_list
     
     def fetch_track(self, track_id: str, json=False) -> track.Track:
-        """Fetches detailed track information from Spotify database, rudimentary artist and album information.
+        """Fetches detailed track information from Spotify database, rudimentary artist information.
 
         Args:
             track_id (str): _description_
@@ -330,31 +262,10 @@ class Spotify_api:
         for curr_artist in result["artists"]:
             artists.append(artist.Artist(id=curr_artist["id"], name=curr_artist["name"]))
 
-        # Album
-        # Album artists
-        album_artists = []
-        for album_artist in result["album"]["artists"]:
-            album_artists.append(artist.Artist(id=album_artist["id"],name=album_artist["name"]))
-
-        # Build album to append
-        tr_album = album.Album(
-            id           = result["album"]["id"],
-            name         = result["album"]["name"],
-            artists      = artists,
-            total_tracks = result["album"]["total_tracks"],
-            images       = result["album"]["images"],
-            release_date = result["album"]["release_date"]
-        )
         result_track = track.Track(
-            id           = track_id,
-            name         = result["name"],
-            artists      = artists,
-            duration_ms  = result["duration_ms"],
-            album        = tr_album,
-            disc_number  = result["disc_number"],
-            track_number = result["track_number"],
-            explicit     = result["explicit"],
-            popularity   = result["popularity"]
+            id      = track_id,
+            name    = result["name"],
+            artists = artists
         ) 
         return result_track
     
@@ -372,19 +283,13 @@ class Spotify_api:
             return self.spotify.current_user_saved_tracks(limit=50)
 
         # fetch favorites
-        done = False
-        offset = 0
+        done       = False
+        offset     = 0
         track_list = []
+
         while not done:
             results = self.spotify.current_user_saved_tracks(limit=50,offset=offset)
             for trk in results["items"]:
-                # Get album artists
-                album_artists = []
-                for art in trk["track"]["album"]["artists"]:
-                    album_artists.append(artist.Artist(
-                        id=art["id"],
-                        name=art["name"]
-                    ))
                 # get track artists
                 trk_artists = []
                 for art in trk["track"]["artists"]:
@@ -394,14 +299,9 @@ class Spotify_api:
                     ))
                 # create track object
                 track_list.append(track.Track(
-                    id           = trk["track"]["id"],
-                    name         = trk["track"]["name"],
-                    artists      = trk_artists,
-                    duration_ms  = trk["track"]["duration_ms"],
-                    album_id     = trk["track"]["album"]["id"],
-                    track_number = trk["track"]["track_number"],
-                    explicit     = trk["track"]["explicit"],
-                    popularity   = trk["track"]["popularity"]
+                    id      = trk["track"]["id"],
+                    name    = trk["track"]["name"],
+                    artists = trk_artists
                 ))
             if offset >= results["total"]:
                 done = True

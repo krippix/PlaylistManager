@@ -25,10 +25,6 @@ class Database():
 
     # ---- Getter Functions ----
 
-    def get_album(self, id: str) -> album.Album | None:
-        """Returns album with given id."""
-        # TODO
-
     def get_artist(self, id: str) -> artist.Artist | None:
         """Returns artist object or None if nothing was found."""
         db_result = self.cursor.execute("SELECT id_pkey,name,timestamp FROM artists WHERE id_pkey == ?", (id,)).fetchall()
@@ -56,7 +52,7 @@ class Database():
             result_list.append(item)
         return result_list
 
-    def get_playlist(self, id: str) -> playlist.Playlist | None:
+    def get_playlist(self, user_id: str) -> playlist.Playlist | None:
         """Returns playlist object or None if nothing was found."""
         db_result = self.cursor.execute("SELECT id_pkey,name,isgenreplaylist FROM playlists WHERE users_id_fkey=?",(user_id,)).fetchall()
 
@@ -112,9 +108,6 @@ class Database():
         self.check()
 
     # -- add --
-    
-    def add_album(self, album: album.Album):
-        """Adds an album to the database. Overwrites if already present."""
 
     def add_artist(self, artist: artist.Artist):
         """Adds an artist to the database. Overwrites if already present."""

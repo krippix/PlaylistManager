@@ -8,9 +8,10 @@ import winsound
 import traceback
 # project
 from Gustelfy import database
-from Gustelfy.objects import album, artist, playlist, track, user
+from Gustelfy.objects import artist, playlist, track, user
 from Gustelfy.util import config
 from Gustelfy import session, spotify_api
+
 
 def test():
     try:
@@ -38,6 +39,7 @@ def test():
     winsound.Beep(523, 150) # C5
     winsound.Beep(659, 600) # E5
 
+
 def db_update():
     """Testing update of incomplete entries
     """
@@ -46,10 +48,9 @@ def db_update():
     logger.debug("amogus")
     session = prepare()
 
-    #session.db_con.add_album(session.spotify.fetch_album("66Oi1725EJCwCh3NqWcRuL"))
-
     session.update_database()
-    
+
+
 def dbp():
     """Testrun without flask"""
     logger = logging.getLogger("Gustelfy")
@@ -66,24 +67,7 @@ def dbp():
     # Test database fillup
     user_session.dbp_fill_db()
 
-    # test of fetch_favorites album bug
-    """
-    testdata = user_session.spotify.fetch_favorites()
-    json_data = user_session.spotify.fetch_favorites(json=True)
 
-    i = 0
-    for fav in testdata:
-        print(fav.get_album())
-        i += 1 
-        if i > 10:
-            break
-
-    if isinstance(json_data, dict):
-        with open('test.json', 'w') as amogus:
-            json.dump(json_data,amogus,indent=3)
-            print("result written to test.json")
-    return
-    """
 def objects():
     """testing different objects"""
     user_session = prepare()
@@ -101,30 +85,13 @@ def objects():
     test_track = track.Track(
         id           = "11111_test",
         name         = "TEST_TRACK",
-        artists      = [test_artist],
-        duration_ms  = 123456,
-        album_id     = "11111_test",
-        disc_number  = 1,
-        track_number = 1,
-        explicit     = True,
-        popularity   = 34
+        artists      = [test_artist]
     )
-    
-    test_album = album.Album(
-        id           = "11111_test",
-        name         = "TEST_ALBUM",
-        artists      = [test_artist],
-        tracks       = [test_track],
-        images       = [{"height":64,"url":"https://www.scdn.co/i/_global/favicon.png","width":64}],
-        release_date = "2021-01-01",
-        total_tracks = 1,
-        popularity   = 69
-    )
-    #print(test_album)
-    #user_session.db_con.add_album(test_album)
+
     #user_session.db_con.add_artist(test_artist)
     user_session.db_con.add_track(test_track)
     return
+
 
 def api():
     logger = logging.getLogger("Gustelfy")
@@ -136,7 +103,6 @@ def api():
     # Turbo thomas: 2vWnOXI1ALzlvNTdjVPMG1
     # Rap über hass: 21ownMQ51Jqlv8si9CTI6R
     #result = spotify.fetch_track('21ownMQ51Jqlv8si9CTI6R',json=True)
-    #result = spotify.fetch_album("1kTlYbs28MXw7hwO0NLYif",json=True)
     result = spotify.fetch_artist("1ehBmvzykgp3Il0BUIZdev",json=True)
     result_o = spotify.fetch_artist("1ehBmvzykgp3Il0BUIZdev")
     #result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH",json=True)
@@ -152,6 +118,7 @@ def api():
         print("result written to test.json")
     #result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH")
     #print(result.get_tracks())
+
 
 def merge():
     """Testing the merge function for different spotify objects
@@ -181,6 +148,7 @@ def merge():
         f"{mogus.get_id()} {mogus.get_artists()} {mogus.get_name()} {mogus.get_timestamp()} {mogus.get_duration_ms()} {mogus.is_expired()} {mogus.get_popularity()} {mogus.get_track_number()}"
     )
 
+
 def amogus():
     """sus
     """
@@ -195,6 +163,7 @@ def amogus():
     winsound.Beep(466, 150) # B4 flat
     winsound.Beep(587, 150) # D5
     winsound.Beep(523, 300) # C5
+
 
 def prepare() -> session.Session:
     logger = logging.getLogger("Gustelfy")
