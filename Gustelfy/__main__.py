@@ -3,7 +3,7 @@
 import logging
 import sys
 # project
-from Gustelfy import app
+from Gustelfy import main
 from Gustelfy import test
 
 

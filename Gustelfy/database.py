@@ -5,18 +5,23 @@ import logging
 import os
 import time
 from pathlib import Path
-from abc import ABC, abstractmethod
 # project
-from Gustelfy.database import interface
 from Gustelfy.util import config, helper
 from Gustelfy.objects import *
 
 
-class SqliteCon(interface.Interface):
+class Database():
     """Implements DatabaseConnection for sqlite3 interface"""
 
     connection: sqlite3.Connection
     cursor: sqlite3.Cursor
+
+    def __init__(self):
+        self.logger     = logging.getLogger(__name__)
+        self.settings   = config.Config()
+        self.connection = sqlite3.connect(self.settings.get_dbpath())
+        self.cursor     = self.connection.cursor()
+
 
     # ---- Getter Functions ----
 
