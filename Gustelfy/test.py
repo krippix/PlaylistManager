@@ -2,7 +2,7 @@
 # python native
 import time, logging, json
 # project
-from Gustelfy.database import database
+from Gustelfy import database
 from Gustelfy.objects import album, artist, playlist, track, user
 from Gustelfy.util import config
 from Gustelfy import session, spotify_api
