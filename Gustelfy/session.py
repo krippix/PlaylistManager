@@ -5,7 +5,6 @@ import time
 # project
 from Gustelfy import spotify_api
 from Gustelfy import database
-from Gustelfy.database import interface
 from Gustelfy.util import config
 from Gustelfy.objects import album, artist, playlist, track, user
 
@@ -14,10 +13,10 @@ class Session:
     '''Entrypoint for any data manipulation. Combines database and spotify API access. This will (probably) represent a user session.'''
     
     spotify: spotify_api.Spotify_api
-    db_con: interface.Interface
+    db_con: database.Database
     user: user.User
 
-    def __init__(self, user: user.User, spotify: spotify_api.Spotify_api, database: interface.Interface):
+    def __init__(self, user: user.User, spotify: spotify_api.Spotify_api, database: database.Database):
         self.spotify = spotify
         self.db_con = database
         self.user = user
