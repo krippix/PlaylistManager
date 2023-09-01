@@ -2,7 +2,7 @@
 # python native
 import time
 # project
-from Gustelfy.objects import spotifyObject
+from objects import spotifyObject
 
 class Artist(spotifyObject.SpotifyObject):
     """Spotify Artist object. Contains genres.

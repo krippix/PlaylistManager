@@ -12,4 +12,3 @@ if len(sys.argv) > 1:
         test.test()
 else:
     print("That doesent work yet :harold:")
-

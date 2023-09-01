@@ -7,10 +7,10 @@ import sys
 import winsound
 import traceback
 # project
-from Gustelfy import database
-from Gustelfy.objects import album, artist, playlist, track, user
-from Gustelfy.util import config
-from Gustelfy import session, spotify_api
+import database
+from objects import album, artist, playlist, track, user
+from util import config
+import session, spotify_api
 
 def test():
     try:

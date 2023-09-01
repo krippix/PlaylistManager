@@ -6,9 +6,9 @@ from requests import ReadTimeout
 import logging
 import time
 # project
-from Gustelfy.database import database
-from Gustelfy.util import config
-from Gustelfy.objects import album, artist, playlist, track, user
+import database
+from util import config
+from objects import album, artist, playlist, track, user
 
 
 class Spotify_api:

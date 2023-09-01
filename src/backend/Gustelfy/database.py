@@ -6,8 +6,8 @@ import os
 import time
 from pathlib import Path
 # project
-from Gustelfy.util import config, helper
-from Gustelfy.objects import *
+from util import config, helper
+from objects import *
 
 
 class Database():

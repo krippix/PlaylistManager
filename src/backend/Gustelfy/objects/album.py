@@ -3,8 +3,8 @@
 import time
 import logging
 # project
-from Gustelfy.objects import spotifyObject
-from Gustelfy.objects import track, artist
+from objects import spotifyObject
+from objects import track, artist
 
 class Album(spotifyObject.SpotifyObject):
     """Spotify Album object, contains tracks.

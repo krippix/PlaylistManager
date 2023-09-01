@@ -2,8 +2,8 @@
 # python native
 import time
 # project
-from Gustelfy.objects import spotifyObject
-from Gustelfy.objects import track
+from objects import spotifyObject
+from objects import track
 
 class Playlist(spotifyObject.SpotifyObject):
     
