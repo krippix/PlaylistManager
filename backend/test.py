@@ -8,7 +8,7 @@ import winsound
 import traceback
 # project
 import database
-from objects import album, artist, playlist, track, user
+from objects import album, artist, track, user
 from util import config
 import session, spotify_api
 
@@ -168,7 +168,7 @@ def merge():
     )
     new = track.Track(
         id="amogus123",
-        artists=[artist.Artist(id="mogusmann",name="kekw")],
+        artists=[artist.Artist(id="mogusmann", name="kekw")],
         name="Amogus Party",
         timestamp=3,
         duration_ms=123,

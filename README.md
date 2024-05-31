@@ -1,8 +1,19 @@
 # GustelfyPlaylists
 
+## Configuration
+
+The backend configuration is handled by environment variables.
+Required keys are marked with a *
+
+| variable                  | example value                      | description |
+|:--------------------------|:-----------------------------------|-------------|
+| `SPOTIPY_CLIENT_ID`*      | `cdef012345678abcdef012345678abcd` |             |
+| `SPOTIPY_CLIENT_SECRET`*  | `678abcdef012345678abcdef01234567` |             |
+| `SPOTIPY_REDIRECT_URI`*   | `https://example.com/spotify`      |             |
+
 ## Project Goal
 
-This small software is supposed to manage Spotify Playlists, the Playlists to be managed have to be chosen explicitely.
+This small software is supposed to manage Spotify Playlists, the Playlists to be managed have to be chosen explicitly.
 
 The core idea(s) so far.
 
@@ -22,6 +33,6 @@ JavaScript Node Application accessing the backend via its API.
 
 Python REST API written with FastAPI
 
-Start by typing: `python ./src/backend/main.py`
+Start by typing: `python -m uvicorn backend.main:app --reload`
 
 Documentation at: <http://localhost:8000/docs>

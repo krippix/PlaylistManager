@@ -118,7 +118,7 @@ class Spotify_api:
         # get artists
         artist_list = []
         for art in result["artists"]:
-            artist_list.append(artist.Artist(id=art["id"],name=art["name"]))
+            artist_list.append(artist.Artist(id=art["id"], name=art["name"]))
 
         # get Tracks
         # TODO: handle more than 50 tracks in single album
@@ -127,7 +127,7 @@ class Spotify_api:
             # Add track artists
             trk_artists = []
             for trk_art in trk["artists"]:
-                trk_artists.append(artist.Artist(id=trk_art["id"],name=trk_art["name"]))
+                trk_artists.append(artist.Artist(id=trk_art["id"], name=trk_art["name"]))
             album_tracks.append(track.Track(
                 id           = trk["id"],
                 name         = trk["name"],
@@ -334,7 +334,7 @@ class Spotify_api:
         # Album artists
         album_artists = []
         for album_artist in result["album"]["artists"]:
-            album_artists.append(artist.Artist(id=album_artist["id"],name=album_artist["name"]))
+            album_artists.append(artist.Artist(id=album_artist["id"], name=album_artist["name"]))
 
         # Build album to append
         tr_album = album.Album(

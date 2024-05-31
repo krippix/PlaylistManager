@@ -1,11 +1,9 @@
 # external
 # python native
 import logging
-import time
 # project
 import spotify_api, database
-from util import config
-from objects import album, artist, playlist, track, user
+from objects import playlist, track, user
 
 
 class Session:
