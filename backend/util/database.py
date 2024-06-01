@@ -1,15 +1,36 @@
+import dataclasses
 import sqlite3
 
 import json
 from pathlib import Path
 
+from backend.objects.user import User
+
+
+class Cursor:
+    """
+    Wrapper around sqlite3 cursor, to allow 'with' syntax.
+    """
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def __enter__(self) -> sqlite3.Cursor:
+        self.cursor = self.conn.cursor()
+        return self.cursor
+
+    def __exit__(self, *_):
+        self.cursor.close()
+        self.conn.commit()
+
 
 class Database:
     def __init__(self):
         self.DB_FOLDER = Path(__file__).parent.parent / 'data'
-        print(self.DB_FOLDER / 'database.sqlite')
         self.conn = sqlite3.connect(self.DB_FOLDER / 'database.sqlite')
         self.__ensure_tables()
+
+    def cursor(self):
+        return Cursor(self.conn)
 
     def __ensure_tables(self):
         """
@@ -18,11 +39,81 @@ class Database:
         with open(self.DB_FOLDER / 'sqlite3_conf.json', 'r') as f:
             schema_dict = json.load(f)
 
-        cur = self.conn.cursor()
-        tables = cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        with Cursor(self.conn) as cur:
+            tables = cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
 
-        for key, value in schema_dict.items():
-            if key not in [x[0] for x in tables]:
-                cur.execute(value)
-                print(f'Created table {key}')
-        cur.close()
+            for key, value in schema_dict.items():
+                if key not in [table[0] for table in tables]:
+                    cur.execute(value)
+                    print(f'Created table {key}')
+
+    def set_user(self, user_id, **kwargs):
+        """
+        Creates new user in spotify database, overwrites existing user settings.
+        """
+        # remove non-existent fields
+        user_fields = [field.name for field in dataclasses.fields(User)]
+        input_dict = {key: value for key, value in kwargs.items() if key in user_fields}
+
+        # get existing user data and overwrite with provided information
+        user_exists = False
+        if user := self.get_user(user_id):
+            user_exists = True
+            user_dict = dataclasses.asdict(user)
+        else:
+            user_dict = {"user_id": user_id}
+        user_dict.update(input_dict)
+
+        # commit to database
+        with Cursor(self.conn) as cur:
+            if user_exists:
+                update_str = ",".join([f"{key}=?" for key in user_dict.keys()])
+                update_values = tuple(list(user_dict.values()) + [user_id])
+                cur.execute(f'UPDATE users SET {update_str} WHERE user_id=?', update_values)
+            else:
+                user_fields = ",".join(list(user_dict.keys()))
+                user_values = tuple(user_dict.values())
+                cur.execute(
+                    f'INSERT INTO users ({user_fields}) '
+                    f'VALUES ({("?," * len(user_values))[:-1]})',
+                    user_values
+                )
+
+    def get_user(self, user_id: str) -> User | None:
+        with Cursor(self.conn) as cur:
+            user_fields = [field.name for field in dataclasses.fields(User)]
+            db_result = cur.execute(
+                f'SELECT {",".join(user_fields)} FROM users WHERE user_id=?', (user_id,)).fetchone()
+        if not db_result:
+            return None
+        return User(**dict(zip(user_fields, db_result)))
+
+    def set_token(self, user_id: str, token: dict):
+        """
+        Writes token to a user entry in the database.
+        """
+        if not self.get_user(user_id):
+            raise ValueError(f"Failed to set token: User '{user_id}' does not exist.")
+        data = token.copy()
+        data['user_id'] = user_id
+        with Cursor(self.conn) as cur:
+            cur.execute(
+                'UPDATE users SET access_token=:access_token, token_type=:token_type, expires_in=:expires_in, '
+                'refresh_token=:refresh_token, scope=:scope, expires_at=:expires_at '
+                'WHERE user_id=:user_id', data
+            )
+
+    def get_token(self, user_id: str) -> dict | None:
+        """
+        Returns auth dict if user exits
+        """
+        if not (user := self.get_user(user_id)):
+            return None
+        return {
+            'access_token': user.access_token,
+            'token_type': user.token_type,
+            'expires_in': user.expires_in,
+            'refresh_token': user.refresh_token,
+            'scope': user.scope,
+            'expires_at': user.expires_at,
+        }

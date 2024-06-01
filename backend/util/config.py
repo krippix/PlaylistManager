@@ -1,7 +1,12 @@
 """
 This file handles all configuration options within this project.
 """
+from backend.util.database import Database
+
 import os
+
+# Database object to be used all over the project
+database = Database()
 
 
 def retrieve_config() -> dict:
