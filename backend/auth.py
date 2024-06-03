@@ -1,36 +1,43 @@
+from datetime import datetime
+from datetime import timezone
 import secrets
+from http import HTTPStatus
 
 from backend.util import config
 from backend.util import cache_handler
 
 import spotipy
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
 
 
 router = APIRouter()
 
 
-@router.get("/auth/login")
+@router.get("/login")
 async def login() -> RedirectResponse:
     """
     Starts the login process by generating a login request for spotify.
     """
-    token = secrets.token_urlsafe(30)
+    callback_key = secrets.token_urlsafe(30)
     auth_handler = spotipy.oauth2.SpotifyOAuth(
         scope=config.get_scopes(),
         open_browser=False,
-        state=token,
+        state=callback_key,
         cache_handler=None
     )
+    callback_key_expiry = int(datetime.now(timezone.utc).timestamp()) + 3600
+    config.database.set_callback_key(callback_key, callback_key_expiry)
     return RedirectResponse(auth_handler.get_authorize_url())
 
 
-@router.get("/auth/callback")
+@router.get("/callback")
 async def callback(code: str, state: str):
     """
     This function is called by the spotify redirect, this is where the key will be provided and parsed.
     """
+    if not config.database.valid_callback_key(state):
+        raise HTTPException(status_code=400, detail="Invalid state")
     cache = cache_handler.DictCacheHandler()
     auth_handler = spotipy.oauth2.SpotifyOAuth(
         scope=config.get_scopes(),

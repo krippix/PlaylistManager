@@ -1,3 +1,4 @@
 {
-    "users": "CREATE TABLE users(user_id TEXT NOT NULL PRIMARY KEY, display_name TEXT, email TEXT, confirmed INTEGER, access_token TEXT, token_type TEXT, expires_in INTEGER, refresh_token TEXT, scope TEXT, expires_at INTEGER)"
+    "users": "CREATE TABLE users(user_id TEXT NOT NULL PRIMARY KEY, display_name TEXT, email TEXT, confirmed INTEGER, access_token TEXT, token_type TEXT, expires_in INTEGER, refresh_token TEXT, scope TEXT, expires_at INTEGER)",
+    "callbacks": "CREATE TABLE callbacks(callback_key TEXT NOT NULL PRIMARY KEY, max_age INTEGER)"
 }

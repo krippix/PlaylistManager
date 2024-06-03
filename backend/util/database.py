@@ -1,4 +1,6 @@
 import dataclasses
+from datetime import datetime
+from datetime import timezone
 import sqlite3
 
 import json
@@ -47,6 +49,7 @@ class Database:
                     cur.execute(value)
                     print(f'Created table {key}')
 
+    # -- USER ----------------------------------------------------------------------------------------------------------
     def set_user(self, user_id, **kwargs):
         """
         Creates new user in spotify database, overwrites existing user settings.
@@ -88,6 +91,7 @@ class Database:
             return None
         return User(**dict(zip(user_fields, db_result)))
 
+    # -- TOKEN ---------------------------------------------------------------------------------------------------------
     def set_token(self, user_id: str, token: dict):
         """
         Writes token to a user entry in the database.
@@ -117,3 +121,37 @@ class Database:
             'scope': user.scope,
             'expires_at': user.expires_at,
         }
+
+    # -- CALLBACK KEY --------------------------------------------------------------------------------------------------
+    def set_callback_key(self, key: str, max_age: int):
+        """
+        Writes a one time use callback key into the database to confirm weather a user is allowed to use /callback
+        """
+        with Cursor(self.conn) as cur:
+            cur.execute("INSERT INTO callbacks (callback_key, max_age) VALUES (?, ?)", (key, max_age))
+
+    def valid_callback_key(self, key: str) -> bool:
+        """
+        Takes callback key as input and checks if it is valid.
+        Deletes the key from the database.
+        """
+        with Cursor(self.conn) as cur:
+            cur.execute("SELECT callback_key,max_age FROM callbacks WHERE callback_key=?", (key,))
+            result = cur.fetchone()
+        if not result:
+            return False
+        # Check if timestamp is valid
+        current_time = int(datetime.now(timezone.utc).timestamp())
+        if result[1] > current_time:
+            self.__delete_callback_key(key)
+            return False
+        # delete entry from database
+        self.__delete_callback_key(key)
+        return True
+
+    def __delete_callback_key(self, key: str):
+        """
+        Removes callback key from database.
+        """
+        with Cursor(self.conn) as cur:
+            cur.execute("DELETE FROM callbacks WHERE callback_key=?", (key,))
