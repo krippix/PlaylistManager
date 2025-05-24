@@ -2,11 +2,9 @@
 # python native
 import time
 # project
-import util.config
-import objects.track, objects.artist, objects.playlist
+from Gustelfy.util import config
+from Gustelfy.objects import track, artist, playlist
 
-
-import objects.artist
 
 class Track:
 
@@ -66,7 +64,7 @@ class Track:
     def get_name(self) -> str:
         return self.name
 
-    def get_artists(self) -> list[objects.artist.Artist]:
+    def get_artists(self) -> list[artist.Artist]:
         '''Returns list containing artist objects'''
         return self.artists
 
