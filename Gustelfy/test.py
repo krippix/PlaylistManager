@@ -46,6 +46,13 @@ def api():
     with open('test.json', 'w') as amogus:
         json.dump(result,amogus,indent=3)
     result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH",json=False)
+    print(result.get_tracks())
+
+"""
+    result = spotify.test("349T3IRkkkTyBc1SqyP1JH")
+    with open('test_playlist_track.json', 'w') as amogus:
+        json.dump(result,amogus,indent=3)
+"""
 
 def db_connection():
     "pyhton -m Gustelfy db"
