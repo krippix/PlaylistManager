@@ -21,13 +21,17 @@ def test():
         if sys.argv[2] == "db":
             db_connection()
             return
+        if sys.argv[2] == "dbp":
+            dbp()
     else:
         print("Select test to run.")
 
-def test_wat():
+def dbp():
     """Testrun without flask"""
     logger = logging.getLogger(__name__)
+    logger.setLevel(10)
     
+    logger.debug("test")
     ##testalbum = album.Album("amogus", "amogus", [track.Track("amo_gus", "name", [artist.Artist("i","i",12)])], [artist.Artist("i","i",12)])
 
     # Initialise config object
@@ -43,10 +47,13 @@ def test_wat():
     spotify = spotify_api.Spotify_api()
 
     user_session = session.Session(usr, spotify, db)
+    
+    user_session.dbp_fill_db()
+    
     #data = user_session.get_homepage_data()
     #user_session.commit_favorites_changes(data["changes"])
 
-    user_session.commit_favorites_changes(user_session.get_favorites_changes())
+    #user_session.commit_favorites_changes(user_session.get_favorites_changes())
 
 def api():
     logger = logging.getLogger(__name__)
@@ -60,10 +67,14 @@ def api():
     #result = spotify.fetch_album("1kTlYbs28MXw7hwO0NLYif")
     #result = spotify.fetch_artist("1ehBmvzykgp3Il0BUIZdev",json=True)
     #result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH",json=True)
+    #result = spotify.fetch_playlist("5JfpaSo0hvoRdGRYFrEP3x",json=True) # wtf?
+    #result = spotify.amogus("5JfpaSo0hvoRdGRYFrEP3x")
     #result = spotify.fetch_favorites(json=True)
-    result = spotify.fetch_playlists(json=True)
+    #result = spotify.fetch_playlists(json=True)
+    #result = spotify.fetch_user(json=True)
     with open('test.json', 'w') as amogus:
         json.dump(result,amogus,indent=3)
+        print("result written to test.json")
     #result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH")
     #print(result.get_tracks())
 
