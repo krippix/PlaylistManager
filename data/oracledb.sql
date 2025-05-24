@@ -35,6 +35,13 @@ CREATE TABLE ALBUMS(
     release_date VARCHAR(10),
     timestamp NUMBER(20)
 );
+CREATE TABLE ALBUM_ARTISTS(
+    albums_id_fkey VARCHAR(22),
+    artists_id_fkey VARCHAR(22),
+    PRIMARY KEY (albums_id_fkey,artists_id_fkey),
+    FOREIGN KEY (albums_id_fkey) REFERENCES ALBUMS(id_pkey),
+    FOREIGN KEY (artists_id_fkey) REFERENCES ARTISTS(id_pkey)
+);
 CREATE TABLE ARTISTS(
     id_pkey VARCHAR(22) PRIMARY KEY,
     name NVARCHAR2(64) NOT NULL,
