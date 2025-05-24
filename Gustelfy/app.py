@@ -7,7 +7,7 @@ import sys
 # project
 from Gustelfy import spotify_api, session
 from Gustelfy.database import database
-from Gustelfy.objects import track, playlist, album
+from Gustelfy.objects import *
 from Gustelfy.util import config
 
 # prepare project configuration
@@ -62,6 +62,8 @@ def test():
     """Testrun without flask"""
     logger = logging.getLogger(__name__)
     
+    ##testalbum = album.Album("amogus", "amogus", [track.Track("amo_gus", "name", [artist.Artist("i","i",12)])], [artist.Artist("i","i",12)])
+
     # Check config for errors
     settings = config.Config()
     settings.checkConfig()

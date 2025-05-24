@@ -176,11 +176,5 @@ class Config:
         defaultconfig['SCRIPT'] = {
             "loglevel" : "info"
         }
-        defaultconfig["EXPIRY"] = {
-            "tracks"  : 3600,
-            "artists" : 3600,
-            "album"   : 3600,
-            "user"    : 3600
-        }
 
         return defaultconfig

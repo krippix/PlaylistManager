@@ -18,9 +18,8 @@ class SpotifyObject(ABC):
     def __init__():
         pass
 
-    @abstractmethod
-    def __eq__():
-        pass
+    def __eq__(self, other):
+        return self.is_equal(other)
 
     def __str__(self):
         return self.name
@@ -60,3 +59,7 @@ class SpotifyObject(ABC):
         self.expires_after = seconds
     
     # ---- Other Functions ----
+
+    @abstractmethod
+    def is_equal(self, other):
+        pass
