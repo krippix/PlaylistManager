@@ -4,7 +4,7 @@ import logging, time
 # project
 import spotify_api, database
 import util.config
-import objects.track
+import objects.track, objects.playlist
 
 class Session:
     '''Entrypoint for any data manipulation. Combines database and spotify API access. This will (probably) represent a user session.'''
@@ -50,10 +50,6 @@ class Session:
         local_lib = self.db_con.get_library(self.user_id)
         online_lib = self.spotify.fetch_library()
 
-        print(local_lib)
-        print("'##########################################")
-        print(online_lib)
-
         # Creates list of songs that exist in both local and online library
         overlap = [local_track for local_track in local_lib for online_track in online_lib if local_track.get_id() == online_track.get_id()]
 
@@ -84,6 +80,13 @@ class Session:
         self.logger.info(f"{len(removed)} tracks have been removed.")
 
         return (added,removed)
+
+
+    def get_playlists(self) -> list[objects.playlist.Playlist]:
+        '''Kicks of updates of the users local playlists, returns current state of them.'''
+        self.logger.debug(f"get_playlists()")
+
+        self.update_playlists()
 
 
     ##########
@@ -146,6 +149,16 @@ class Session:
         '''Updates users library'''
         self.logger.debug("update_library()")
 
+
+    def update_playlists(self):
+        '''Pulls current playlist state from spotify api, updates local db entry.'''
+        self.logger.debug(f"update_playlists()")
+
+        online_playlists = self.spotify.fetch_playlists()
+        db_playlists = self.db_con.get_playlists(self.user_id)
+
+
+
     ##########
     # compare
 
@@ -154,22 +167,7 @@ class Session:
     # webserver interfaces (?)
 
 
-def kekw(a,b):
-    print(f"a: {a}  b: {b}")
-    if a==b:
-        return a
-
-
-def test():
-    numbers = [1,2,3,4,5,6,'f']
-    letters = ['a','b','c','d','e','f']
-
-    test = [kekw(number,letter) for number in numbers for letter in letters]
-    test = [i for i in test if i is not None]
-    print(test)
-
 
 if __name__ == "__main__":
     logging.error("This file is not supposed to be executed.")
-    test()
     exit()

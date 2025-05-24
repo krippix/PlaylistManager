@@ -47,9 +47,6 @@ def index():
     data = user_session.get_homepage_data()
     user_session.commit_library_changes(data["changes"])
     
-    
-
-    #tmp = [objects.track.Track(id="1234",name="Fick dich",artists=["MC Hurensohn"],timestamp=58),objects.track.Track(id="333",name="Wurstbrotinator",artists=["Brotwurster"],timestamp=58)]
     return flask.render_template('index.html', dict=data)
 
 
