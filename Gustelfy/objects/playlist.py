@@ -29,15 +29,16 @@ class Playlist(spotifyObject.SpotifyObject):
         """Creates a Spotify Playlist object
 
         Args:
-            id (str): Spotify ID of the Playlist
-            name (str): Playlist (display) name
-            user_id (str): Spotify ID of the user following the playlist in this context
-            owner_id (str): Spotify ID of the Playlist owner
-            tracks (list, optional): tracks within the playlist. Defaults to [].
-            managed (int, optional): Whether or not the playlist will be managed by this software. Defaults to 0.
-            timestamp (int, optional): timestamp integer. Defaults to int(time.time()).
-            image_url (str, optional): Playlist image url. Defaults to "".
-            genres (list, optional): List of genres to be auto-included. Defaults to [].
+            - id (str): Spotify ID
+            - name (str): Name
+            - description (str): Playlist Description
+            - user_id (str): user following playlist
+            - owner_id (str): Playlist Creator ID
+            - tracks (list, optional): Playlist tracks. Defaults to [].
+            - managed (int, optional): Managed flag (for this software)
+            - timestamp (int, optional): Defaults to int(time.time()).
+            - image_url (str, optional): Image URL.
+            - genres (list, optional): Genres (For management).
         """
         self.set_id(id)
         self.set_name(name)
@@ -146,6 +147,7 @@ class Playlist(spotifyObject.SpotifyObject):
             raise TypeError()
         if self.get_id() != other.get_id():
             self.logger.error("Connot merge different Playlist objects.")
+            return
         # Determine newer object
         if self.get_timestamp() < other.get_timestamp():
             new = other
