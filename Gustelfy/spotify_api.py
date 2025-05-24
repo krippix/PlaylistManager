@@ -130,13 +130,15 @@ class Spotify_api:
         )
         return result_album
     
-    def fetch_artist(self, artist_id: str) -> artist.Artist:
+    def fetch_artist(self, artist_id: str, json=False) -> artist.Artist:
         self.logger.debug(f"fetch_artist({artist_id})")
         try:
             result = self.spotify.artist(artist_id)
         except Exception as e:
             self.logger.error(f"Artist with id '{artist_id}' not found.\n{e}")
             return None
+        if json:
+            return result
         # Get images
         img_list = []
         for img in result["images"]:
@@ -272,36 +274,70 @@ class Spotify_api:
         ) 
         return result_track
     
-    def fetch_favorites(self) -> list[track.Track]:
-        '''Takes all tracks from users favorites and returns them as List of track objects'''
-        result_list = []
+    def fetch_favorites(self, json=False) -> list[track.Track]:
+        """Get list of favorites a user has aquired
+
+        Args:
+            json (bool, optional): return raw json instead of a spotify object. Defaults to False.
+
+        Returns:
+            list[track.Track]: _description_
+        """
+        # json result for debugging
+        if json:
+            return self.spotify.current_user_saved_tracks(limit=50)
 
         # fetch favorites
         done = False
         offset = 0
-
-        # iterate over favorites
         while not done:
-            results = self.spotify.current_user_saved_tracks(limit=50,offset=offset)
-
-            if len(results["items"]) < 50:
+            result = self.spotify.current_user_saved_tracks(limit=50,offset=offset)
+            # get track
+            track_list = []
+            for trk in results["items"]:
+                # Get album artists
+                album_artists = []
+                for art in trk["track"]["album"]["artists"]:
+                    album_artists.append(artist.Artist(
+                        id=art["id"],
+                        name=art["name"]
+                    ))
+                # Get album images
+                album_images = []
+                for image in trk["track"]["album"]["images"]:
+                    album_images.append((image["height"],image["url"],image["width"]))
+                # create album object
+                trk_album = album.Album(
+                    id=trk["track"]["id"],
+                    name=trk["track"]["name"],
+                    artists=album_artists,
+                    images=album_images
+                )
+                # get track artists
+                trk_artists = []
+                for art in trk["track"]["artists"]:
+                    trk_artists.append(artist.Artist(
+                        id=art["id"],
+                        name=art["name"]
+                    ))
+                # create track object
+                track_list.append(track.Track(
+                    id=trk["id"],
+                    name=trk["name"],
+                    artists=trk_artists,
+                    duration_ms=trk["duration_ms"],
+                    album=trk_album,
+                    track_number=trk["track_number"],
+                    explicit=trk["explicit"],
+                    popularity=trk["popularity"]
+                ))
+            if offset >= result["total"]:
                 done = True
-            
-            for song in results["items"]:
-                song = song["track"]
-                
-                # put artists into one list
-                artists = []
-                for curr_artist in song["artists"]:
-                    artists.append(artist.Artist(curr_artist["id"],curr_artist["name"], timestamp=int(time.time())))
-                
-                result_list.append(track.Track(id=song["id"],name=song["name"],artists=artists, timestamp=int(time.time())))
-            offset += 50
-        
+            else:
+                offset += 50
         return result_list
 
-
-    def fetch_playlists(self) -> list[playlist.Playlist]:
+    def fetch_playlists(self, json=False) -> list[playlist.Playlist]:
         '''Returns a list of the users created playlists.'''
         self.logger.debug(f"fetch_playlists()")
         
