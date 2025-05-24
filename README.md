@@ -3,7 +3,7 @@
 ## Setup
 
 API KEY can be found here:
-https://developer.spotify.com/dashboard/
+<https://developer.spotify.com/dashboard/>
 
 ## Goal
 
