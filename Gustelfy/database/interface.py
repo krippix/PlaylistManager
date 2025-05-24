@@ -3,15 +3,13 @@
 import logging
 from abc import ABC, abstractmethod
 # project
-from Gustelfy.objects import *
+from Gustelfy.objects import album, artist, playlist, track, user
 from Gustelfy.util import config
 
 
 class Interface(ABC):
-    '''
-    Base class for all Database connections.
-    This class is not supposed to check if for example a song already exists!
-    '''
+    """Abstract class for database connections
+    """
 
     def __init__(self):
         '''Connect to the database.'''
@@ -88,6 +86,7 @@ class Interface(ABC):
         '''Adds a user to the database. Overwrites if already present.'''
 
     # -- Update --
+
     @abstractmethod
     def update_favorites(self, delta: tuple[list[track.Track], list[track.Track]]):
         """Updates list of favorites with given input
@@ -96,7 +95,7 @@ class Interface(ABC):
             delta (tuple[list[track.Track], list[track.Track]]): 0 - added tracks; 1 - removed tracks
         """
 
-    # ---- Database integrity ----
+    # -- Database integrity --
 
     @abstractmethod
     def check(self):
