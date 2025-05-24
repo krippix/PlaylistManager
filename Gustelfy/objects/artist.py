@@ -12,13 +12,28 @@ class Artist(spotifyObject.SpotifyObject):
     genres: list[str]
     image_url: str
     
-    def __init__(self, id: str, name: str, genres=[], timestamp=int(time.time())):
-        '''Creates new artist object with the provided data'''
+    def __init__(self,
+                id: str,
+                name: str,
+                genres=[],
+                timestamp=int(time.time()),
+                image_url="https://i.scdn.co/image/ab6775700000ee8555c25988a6ac314394d3fbf5"
+                ):
+        """Initialises new Artist object
+
+        Args:
+            id (str): _description_
+            name (str): _description_
+            genres (list, optional): _description_. Defaults to [].
+            timestamp (_type_, optional): _description_. Defaults to int(time.time()).
+            image_url (str, optional): _description_. Defaults to Spotify Logo
+        """
         self.set_id(id)
         self.set_name(name)
         self.set_timestamp(timestamp)
 
         self.set_genres(genres)
+        self.set_image_url(image_url)
 
     # ---- Getter Functions ----
 
@@ -47,6 +62,8 @@ class Artist(spotifyObject.SpotifyObject):
         Returns:
             bool: whether or not they are equal
         """
+        if other is None:
+            return False
         if self.get_id() != other.get_id():
             return False
         if self.get_name() != other.get_name():
