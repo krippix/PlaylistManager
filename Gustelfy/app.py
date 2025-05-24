@@ -71,6 +71,13 @@ def test():
     db = database.Database("sqlite3").get_db_connection()
     db.check()
 
+    # Connect to spotify
+    spotify = spotify_api.Spotify_api()
+
+    user_session = session.Session(spotify, db)
+    data = user_session.get_homepage_data()
+    user_session.commit_favorites_changes(data["changes"])
+
 
 if __name__ == "__main__":    
     try:
