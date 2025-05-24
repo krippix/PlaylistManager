@@ -1,6 +1,7 @@
 # external
 # python native
 import time
+import logging
 # project
 from Gustelfy.objects import spotifyObject
 from Gustelfy.objects import track, artist
@@ -11,15 +12,15 @@ class Album(spotifyObject.SpotifyObject):
 
     artists: list[artist.Artist]
     tracks: list[track.Track]
-    images: list[tuple()]
+    images: list[dict]
     release_date: str
     total_tracks: int
     popularity: int
 
     def __init__(self,
                 id: str,
-                name: str,
-                artists: list[artist.Artist],
+                name=None,
+                artists=[],
                 tracks=[],
                 images=[],
                 release_date=None,
@@ -27,6 +28,21 @@ class Album(spotifyObject.SpotifyObject):
                 timestamp=int(time.time()),
                 popularity=None
                 ):
+        """
+        Creates Spotify Album Object
+
+        Args:
+            - id           : (str) Spotify Album ID 
+            - name         : (str) Album Name
+            - timestamp    : (int) timestamp -> defaults to current time
+            - artists      : (list[Artist]) List of Album artists
+            - tracks       : (list[Track]) List of Album tracks
+            - images       : (list[{"width": w, "url" : u, "height" : h}]) List of image dicts
+            - release_date : (str) release date string
+            - total_tracks : (int) total tracks in album, may not match with len(tracks)
+            - popularity   : (int) popularity 0-100
+        """
+        self.logger = logging.getLogger(__name__)
         self.set_id(id)
         self.set_name(name)
         self.set_timestamp(timestamp)
@@ -46,7 +62,7 @@ class Album(spotifyObject.SpotifyObject):
     def get_tracks(self) -> list[track.Track]:
         return self.tracks
 
-    def get_images(self) -> str:
+    def get_images(self) -> list[dict]:
         return self.images
     
     def get_image_url(self) -> str:
@@ -56,8 +72,8 @@ class Album(spotifyObject.SpotifyObject):
             str: image url
         """
         try:
-            return self.images[0][1]
-        except Exception:
+            return self.images[0]["url"]
+        except IndexError:
             return ""
 
     def get_release_date(self) -> str:
@@ -70,6 +86,9 @@ class Album(spotifyObject.SpotifyObject):
         return self.popularity
 
     # ---- Setter Functions ----
+
+    def set_name(self, name: str):
+        self.name = name
     
     def set_tracks(self, tracks: list[track.Track]):
         self.tracks = tracks
@@ -83,7 +102,7 @@ class Album(spotifyObject.SpotifyObject):
         Args:
             images (list[tuple(int,str,int)]): (height,url,width)
         """
-        self.image_url = images
+        self.images = images
 
     def set_release_date(self, date: str):
         self.release_date = date
@@ -149,7 +168,7 @@ class Album(spotifyObject.SpotifyObject):
         # Check if wrong input
         if not isinstance(other, Album):
             raise TypeError()
-        if self.get_id() == other.get_id():
+        if self.get_id() != other.get_id():
             self.logger.error("Cannot merge different Album objects.")
             return
         # Decide who is newer
