@@ -11,9 +11,11 @@ class Track(spotifyObject.SpotifyObject):
     """
 
     artists = []
+    duration: int
+    disc_number: int
+    explicit: bool
     
     def __init__(self, id: str, name: str, artists: list[artist.Artist], timestamp=int(time.time())):
-        '''Creates new artist object with the provided data'''
         self.set_id(id)
         self.set_name(name)
         self.set_timestamp(timestamp)
@@ -31,6 +33,28 @@ class Track(spotifyObject.SpotifyObject):
         """
         return self.artists
 
+    def get_duration(self) -> int:
+        """Returns track's duration in ms
+
+        Returns:
+            int: duration in ms
+        """
+        return self.duration
+
+    def get_disc_number(self) -> int:
+        return self.disc_number
+
+    def is_explicit(self) -> int:
+        """Returns bool value of explicity as int 1 or 0
+
+        Returns:
+            int: 0 || 1
+        """
+        if self.explicit:
+            return 1
+        else:
+            return 0
+
     # ---- Setter Functions ----
    
     def set_artists(self, artists: list):
@@ -38,6 +62,20 @@ class Track(spotifyObject.SpotifyObject):
         self.artists = []
         for artist in artists:
             self.artists.append(artist)
+
+    def set_duration(self, duration: int):
+        """Sets track's duration in ms
+
+        Args:
+            duration (int): duration in ms
+        """
+        self.duration = duration
+
+    def set_disc_number(self, number: int):
+        self.disc_number = number
+
+    def set_explicit(self, explicit: bool):
+        self.explicit = explicit
 
     # ---- Other Functions ----
 
