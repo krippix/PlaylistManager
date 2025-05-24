@@ -3,7 +3,7 @@ import spotipy
 # python native
 import logging,sqlite3,time
 # project
-from util import config
+import util.config
 import objects.artist, objects.track, objects.playlist
 
 class Database:
@@ -16,12 +16,11 @@ class Database:
     # initial setup
     ###############
 
-    def __init__(self, settings: config.Config):
+    def __init__(self):
         '''Connects to the existing database, or creates it anew.'''
+        settings = util.config.Config()
         self.db_con = sqlite3.connect(settings.get_dbpath())
         self.db_cur = self.db_con.cursor()
-
-        self._ensure_default_tables()
     
 
     def is_valid(self):
@@ -29,7 +28,7 @@ class Database:
         return False # lol
     
 
-    def _ensure_default_tables(self):
+    def ensure_default_tables(self):
         '''Checks if (default)table exists within database, creates it if it was missing.'''
         default_tables = {
             # 1st layer (no dependencies)
@@ -40,11 +39,11 @@ class Database:
             # 2nd layer (regular dependencies)
             "playlists": "CREATE TABLE playlists(id_pkey TEXT NOT NULL PRIMARY KEY, users_id_fkey TEXT NOT NULL, name TEXT NOT NULL, genres_id_fkey, isgenreplaylist INTEGER, FOREIGN KEY (users_id_fkey) REFERENCES users (id_pkey), FOREIGN KEY (genres_id_fkey) REFERENCES genres (id_pkey))",
             # intersection tables
-            "libraries": "CREATE TABLE libraries(users_id_fkey TEXT NOT NULL, tracks_id_fkey TEXT NOT NULL, FOREIGN KEY (users_id_fkey) REFERENCES users (id_pkey), FOREIGN KEY (tracks_id_fkey) REFERENCES tracks (id_pkey))",
-            "playlists_content": "CREATE TABLE playlists_content(playlists_id_fkey TEXT, tracks_id_fkey, FOREIGN KEY (playlists_id_fkey) REFERENCES playlists (id_pkey), FOREIGN KEY (tracks_id_fkey) REFERENCES tracks (id_pkey))",
-            "playlists_genres": "CREATE TABLE playlists_genres(playlists_id_fkey TEXT, genres_id_fkey INTEGER, FOREIGN KEY (playlists_id_fkey) REFERENCES playlists (id_pkey), FOREIGN KEY (genres_id_fkey) REFERENCES genres (id_pkey))",
-            "tracks_artists": "CREATE TABLE tracks_artists(tracks_id_fkey TEXT, artists_id_fkey TEXT, FOREIGN KEY (tracks_id_fkey) REFERENCES tracks (id_pkey), FOREIGN KEY (artists_id_fkey) REFERENCES artists (id_pkey))",
-            "artists_genres": "CREATE TABLE artists_genres(artists_id_fkey TEXT, genres_id_fkey INTEGER, FOREIGN KEY (artists_id_fkey) REFERENCES artists (id_pkey), FOREIGN KEY (genres_id_fkey) REFERENCES genres (id_pkey))"
+            "libraries": "CREATE TABLE libraries(id_pkey INTEGER PRIMARY KEY, users_id_fkey TEXT NOT NULL, tracks_id_fkey TEXT NOT NULL, FOREIGN KEY (users_id_fkey) REFERENCES users (id_pkey), FOREIGN KEY (tracks_id_fkey) REFERENCES tracks (id_pkey))",
+            "playlists_content": "CREATE TABLE playlists_content(id_pkey INTEGER PRIMARY KEY, playlists_id_fkey TEXT, tracks_id_fkey, FOREIGN KEY (playlists_id_fkey) REFERENCES playlists (id_pkey), FOREIGN KEY (tracks_id_fkey) REFERENCES tracks (id_pkey))",
+            "playlists_genres": "CREATE TABLE playlists_genres(id_pkey INTEGER PRIMARY KEY, playlists_id_fkey TEXT, genres_id_fkey INTEGER, FOREIGN KEY (playlists_id_fkey) REFERENCES playlists (id_pkey), FOREIGN KEY (genres_id_fkey) REFERENCES genres (id_pkey))",
+            "tracks_artists": "CREATE TABLE tracks_artists(id_pkey INTEGER PRIMARY KEY, tracks_id_fkey TEXT, artists_id_fkey TEXT, FOREIGN KEY (tracks_id_fkey) REFERENCES tracks (id_pkey), FOREIGN KEY (artists_id_fkey) REFERENCES artists (id_pkey))",
+            "artists_genres": "CREATE TABLE artists_genres(id_pkey INTEGER PRIMARY KEY, artists_id_fkey TEXT, genres_id_fkey INTEGER, FOREIGN KEY (artists_id_fkey) REFERENCES artists (id_pkey), FOREIGN KEY (genres_id_fkey) REFERENCES genres (id_pkey))"
         }
         
         for table in default_tables.keys():
@@ -84,14 +83,13 @@ class Database:
     ################
 
     def add_artist(self, artist: objects.artist.Artist):
-        '''Adds artist to the database.'''
+        '''Adds artist to the database. Updates if artist already exists.'''
         timestamp = int(time.time())
 
         db_result = self.db_cur.execute("SELECT id_pkey,name,timestamp FROM artists WHERE id_pkey == ?", (artist.get_id(),)).fetchall()
 
         if len(db_result) == 0:
             self.db_cur.execute("INSERT INTO artists (id_pkey,name,timestamp) VALUES (?,?,?)",(artist.get_id(), artist.get_name(), timestamp))
-
         else:
             self.db_cur.execute("UPDATE artists SET name = ?, timestamp = ? WHERE id_pkey = ?",(artist.get_name(), timestamp, artist.get_id()))
         
@@ -99,13 +97,32 @@ class Database:
         
 
     def add_track(self, track: objects.track.Track):
-        '''Adds track to the "tracks" database. (overwrites if it already exists)'''
+        '''Adds track to the database. Updates if it already exists'''
+        timestamp = int(time.time())
+
+        db_result = self.db_cur.execute("SELECT id_pkey,name,timestamp FROM tracks WHERE id_pkey == ?", (track.get_id(),)).fetchall()
+
+        if len(db_result) == 0:
+            self.db_cur.execute("INSERT INTO tracks (id_pkey,name,timestamp) VALUES (?,?,?)", (track.get_id(), track.get_name(), timestamp))
+        else:
+            self.db_cur.execute("UPDATE tracks SET name = ?, timestamp = ? WHERE id_pkey = ?", (track.get_name(), timestamp, track.get_id()))
+        
+        # now ensure all involved artists also exist within the database
+
+
         
     def add_user(self, user_id: str, display_name: str):
         '''Adds user to the database'''
 
     def add_playlist(self, playlist: objects.playlist.Playlist):
         '''Adds playlist to the database'''
+
+    def ensure_artists(self, track: objects.track.Track):
+        '''Provides track file with artist information either from local db or spotify api.'''
+        db_con = util.database.Database()
+
+        for artist in track.get_artists:
+            db_con.get_artist(track.get_arti)
 
 if __name__ == "__main__":
     logging.error("This file is not supposed to be executed.")

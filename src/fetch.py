@@ -3,7 +3,7 @@ import spotipy
 # python native
 import logging
 # project
-import objects.artist, objects.track, objects.playlist
+import objects.artist, objects.track, objects.playlist, util.database
 
 def fetch_library(connection: spotipy.Spotify) -> list[objects.track.Track()]:
     '''Takes all tracks from users library and returns them as List of song objects'''
@@ -48,9 +48,12 @@ def fetch_playlists(connection: spotipy.Spotify):
 
         if len(results["items"]) < 50:
             done = True
-            
+
         for item in results["items"]:
             if item["owner"]["id"] == current_user_id:
                 result_list.append(objects.playlist.Playlist(id=item["id"], name=item["name"], owner_id=current_user_id))
 
     return result_list
+
+#def fetch_artist(spotify_con: spotipy.Spotify, ):
+    

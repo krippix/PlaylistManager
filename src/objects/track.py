@@ -6,7 +6,7 @@ class Track:
     name: str
     artist = []
     
-    def __init__(self, id=None, name=None, artists=None):
+    def __init__(self, id: str, name: str, artists: list):
         '''Creates new artist object with the provided data'''
         self.set_id(id)
         self.set_name(name)
@@ -27,6 +27,9 @@ class Track:
     
     def get_name(self) -> str:
         return self.id
+
+    def get_artists(self) -> list:
+        '''Returns list containing artist objects'''
     
     
     #########
