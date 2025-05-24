@@ -1,18 +1,22 @@
 # external
-import flask
+import pydantic
+import fastapi
+import fastapi.middleware.cors
 import spotipy
 # python native
 import logging
 import sys
 # project
 from Gustelfy import spotify_api, session
-from Gustelfy.database import database
+from Gustelfy import database
 from Gustelfy.objects import album, artist, playlist, track, user
 from Gustelfy.util import config
+
 
 # prepare project configuration
 settings = config.Config()
 settings.checkConfig()
+
 
 # Logging config
 logger = logging.getLogger(__name__)
@@ -22,19 +26,42 @@ except:
     logger.setLevel(logging.DEBUG)
 
 
-# Flask configuration
-app = flask.Flask(__name__, root_path=settings.folders["root"], template_folder=settings.folders["templates"])
+# Starting api
+app = fastapi.FastAPI()
 
 
-@app.before_first_request
-def before_first_request():
-    logger.info("Initializing database.")
-    db_con = database.Database()
-    db_con.ensure_default_tables()
-    # spotify api connection
-    spotify = spotify_api.Spotify_api()
+# Needed for cors support
+app.add_middleware(
+    fastapi.middleware.cors.CORSMiddleware,
+    allow_origins=['*'],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 
+# init db
+logger.info("Initializing database.")
+db_con = database.Database()
+db_con.check()
+
+
+# spotify db
+spotify = spotify_api.Spotify_api()
+
+
+#
+# Locations 
+# 
+
+@app.get("/")
+async def amogus():
+    """Gets new key for a new user
+    Returns:
+        {key:value}    
+    """
+    return {"amogus" : "sus"}
+
+"""
 @app.route('/', methods=('GET','POST'))
 def index():
     print(flask.request.method)
@@ -56,12 +83,11 @@ def index():
     user_session.commit_library_changes(data["changes"])
     
     return flask.render_template('index.html', dict=data)
+"""
 
-
-if __name__ == "__main__":    
-    try:
-        if sys.argv[1] == "testrun":
-            test()
-    except Exception as e:
-        logger.error("This is a flask application, start it with 'flask run'")
-        exit()
+if __name__ == "__main__":
+    uvicorn.run(
+        app       = "main:app",
+        log_level = logging.DEBUG,
+        reload    = True
+    )

@@ -4,6 +4,7 @@ import logging
 import time
 # project
 from Gustelfy import spotify_api
+from Gustelfy import database
 from Gustelfy.database import interface
 from Gustelfy.util import config
 from Gustelfy.objects import album, artist, playlist, track, user
