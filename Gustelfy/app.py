@@ -3,16 +3,21 @@ import spotipy, flask
 # python native
 import logging, os
 # project
-import util.database, util.config
+import util
 import objects.artist, objects.track
-import gustelify, spotify_api
+import session, spotify_api
 
 # prepare project configuration
 settings = util.config.Config()
 settings.checkConfig()
 
 # Logging config
-logging.basicConfig(encoding='utf-8', level=logging.ERROR)
+logger = logging.getLogger("Gustelify")
+try:
+    logger.setLevel(settings.get_config("SCRIPT","loglevel"))
+except:
+    logger.setLevel(logging.DEBUG)
+
 
 # Flask configuration
 app = flask.Flask(__name__, root_path=settings.folders["root"], template_folder=settings.folders["templates"])
@@ -46,32 +51,7 @@ def index():
     return flask.render_template('index.html', tracks=tmp)
 
 
-
-
-
-
-
-
-
-
-
-
-# Assuming this will be the user input stuff
-#gustelify.
-
-
-
-
-#library = fetch.fetch_library()
-#for track in library:
-#    db_con.add_track()
-
-
-
-
-
-
-
 if __name__ == "__main__":
-    logging.error("This is a flask application, start it with 'flask run'")
+    logger.error("This is a flask application, start it with 'flask run'")
+    
     exit()
