@@ -20,7 +20,7 @@ def test():
     db = database.Database("oracledb").get_db_connection()
 
     # Create spotify testuser
-    usr = user.User("dennislessel")
+    usr = user.User("testmanfred")
 
     # Connect to spotify
     spotify = spotify_api.Spotify_api()
