@@ -62,11 +62,11 @@ class Interface(ABC):
         '''Adds an album to the database. Overwrites if already present.'''
 
     @abstractmethod
-    def add_artist(self, artist: artist.Artist):
+    def add_artist(self, artist_in: artist.Artist):
         '''Adds an artist to the database. Overwrites if already present.'''
 
     @abstractmethod
-    def add_favorite(self, user: user.User, track: track.Track):
+    def add_favorite(self, user_in: user.User, track_in: track.Track):
         '''Adds a favorite to the database. Overwrites if already present.'''
 
     @abstractmethod
@@ -74,11 +74,11 @@ class Interface(ABC):
         '''Adds a genre to the database. Overwrites if already present.'''
 
     @abstractmethod
-    def add_playlist(self, playlist: playlist.Playlist):
+    def add_playlist(self, playlist_in: playlist.Playlist):
         '''Adds a playlist to the database. Overwrites if already present.'''    
 
     @abstractmethod
-    def add_track(self, track: track.Track):
+    def add_track(self, track_in: track.Track):
         '''Adds a track to the database. Overwrites if already present.'''
 
     @abstractmethod
