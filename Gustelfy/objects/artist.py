@@ -46,6 +46,17 @@ class Artist(spotifyObject.SpotifyObject):
 
     def get_images(self) -> list[tuple()]:
         return self.images
+    
+    def get_image_url(self) -> str:
+        """Returns first found image url
+
+        Returns:
+            str: image url
+        """
+        try:
+            return self.images[0][1]
+        except Exception:
+            return "https://t.scdn.co/images/3099b3803ad9496896c43f22fe9be8c4.png"
 
     def get_popularity(self) -> int:
         return self.popularity
