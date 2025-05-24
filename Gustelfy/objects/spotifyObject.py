@@ -8,7 +8,6 @@ from abc import ABC, abstractmethod
 class SpotifyObject(ABC):
     """Base class for all spotify objects.
     """
-
     id: str
     name: str
     timestamp: int
@@ -62,4 +61,14 @@ class SpotifyObject(ABC):
 
     @abstractmethod
     def is_equal(self, other):
-        pass
+        pass    
+
+    @abstractmethod
+    def merge(self, other):
+        """Combine information of two different Spotify objects into one.
+        Most recent timestamp wins.
+
+        Args:
+            other (spotifyObject): object to merge with
+        """
+        

@@ -1,6 +1,9 @@
 # external
 # python native
-import time, logging, json
+import time
+import logging
+import json
+import sys
 # project
 from Gustelfy.database import database
 from Gustelfy.objects import album, artist, playlist, track, user
@@ -8,6 +11,20 @@ from Gustelfy.util import config
 from Gustelfy import session, spotify_api
 
 def test():
+    if len(sys.argv) >= 2:
+        if sys.argv[2] == "api":
+            api()
+            return
+        if sys.argv[2] == "merge":
+            merge()
+            return
+        if sys.argv[2] == "db":
+            db_connection()
+            return
+    else:
+        print("Select test to run.")
+
+def test_wat():
     """Testrun without flask"""
     logger = logging.getLogger(__name__)
     
@@ -50,11 +67,33 @@ def api():
     #result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH")
     #print(result.get_tracks())
 
-"""
-    result = spotify.test("349T3IRkkkTyBc1SqyP1JH")
-    with open('test_playlist_track.json', 'w') as amogus:
-        json.dump(result,amogus,indent=3)
-"""
+def merge():
+    """Testing the merge function for different spotify objects
+    """
+    old = track.Track(
+        id="amogus123",
+        artists=[],
+        name="Amogus Party",
+        timestamp=1,
+        duration_ms=12343,
+        explicit=False,
+        popularity=20,
+        track_number=12
+    )
+    new = track.Track(
+        id="amogus123",
+        artists=[artist.Artist(id="mogusmann",name="kekw")],
+        name="Amogus Party",
+        timestamp=3,
+        duration_ms=123,
+        explicit=True,
+        popularity=20
+    )
+    new.merge(old)
+    mogus = new
+    print(
+        f"{mogus.get_id()} {mogus.get_artists()} {mogus.get_name()} {mogus.get_timestamp()} {mogus.get_duration_ms()} {mogus.is_expired()} {mogus.get_popularity()} {mogus.get_track_number()}"
+    )
 
 def db_connection():
     "pyhton -m Gustelfy db"

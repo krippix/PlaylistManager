@@ -22,8 +22,8 @@ class Playlist(spotifyObject.SpotifyObject):
                 managed=0,
                 timestamp=int(time.time()),
                 user_id=None,
-                description="",
-                image_url="",
+                description=None,
+                image_url=None,
                 genres=[]
                 ):
         """Creates a Spotify Playlist object
@@ -131,3 +131,64 @@ class Playlist(spotifyObject.SpotifyObject):
             if subresult == False:
                 return False
         return True
+
+    def merge(self, other: 'Playlist') -> 'Playlist':
+        """Merges another Playlist object into this one. Most recent timestamp "wins" conflicts
+
+        Args:
+            other (Playlist): Playlist to merge into this object
+
+        Returns:
+            Playlist: returns self after merge
+        """
+        # Check for wrong input
+        if not isinstance(other, Playlist):
+            raise TypeError()
+        if self.get_id() != other.get_id():
+            self.logger.error("Connot merge different Playlist objects.")
+        # Determine newer object
+        if self.get_timestamp() < other.get_timestamp():
+            new = other
+            old = self
+        else:
+            new = self
+            old = other
+        # name
+        if new.get_name() != old.get_name():
+            self.set_name(new.get_name())
+        # timestamp
+        self.set_timestamp(new.get_timestamp())
+        # owner_id
+        if new.get_owner_id() != old.get_owner_id():
+            self.set_owner_id(new.get_owner_id())
+        # managed
+        if new.is_managed() is None:
+            self.set_managed(old.is_managed())
+        else:
+            self.set_managed(new.is_managed())
+        # tracks
+        tracks = [n_trk.merge(o_trk) for n_trk in new.get_tracks() for o_trk in old.get_tracks if o_trk.get_id() == n_trk.get_id()]
+        for n_trk in new.get_tracks():
+            match = False
+            for trk in tracks:
+                if n_trk.get_id() == trk.get_id():
+                    match = True
+            if not match:
+                tracks.append(n_trk)
+        self.set_tracks(tracks)
+        # description
+        if new.get_description() is None:
+            self.set_description(old.get_description())
+        else:
+            self.set_description(new.get_description())
+        # image_url
+        if new.get_image_url() is None:
+            self.set_image_url(old.get_image_url())
+        else:
+            self.set_image_url(new.set_image_url())
+        # genres
+        if len(new.get_genres()) == 0:
+            self.set_genres(old.get_genres())
+        else:
+            self.set_genres(new.get_genres())
+        return self
