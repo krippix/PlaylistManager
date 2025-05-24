@@ -5,10 +5,12 @@ class Artist:
     timestamp: int
     genres: list
     
-    def __init__(self, id: str, name: str):
+    def __init__(self, id: str, name: str, timestamp: int, **kwargs):
         '''Creates new artist object with the provided data'''
         self.id = id
         self.name = name
+        self.timestamp = timestamp
+        self.genres = kwargs.get('genres', [])
 
     def __str__(self):
         return self.name
@@ -23,6 +25,9 @@ class Artist:
     
     def get_name(self) -> str:
         return self.name
+
+    def get_genres(self) -> list:
+        return self.genres
 
     ########
     # setter

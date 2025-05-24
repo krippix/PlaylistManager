@@ -19,7 +19,6 @@ app = flask.Flask(__name__, root_path=settings.folders["root"], template_folder=
 
 @app.before_first_request
 def before_first_request():
-    print("test")
     db_con = util.database.Database()
     db_con.ensure_default_tables()
     # spotify api connection
@@ -31,9 +30,20 @@ def index():
     # Database init
     db_con = util.database.Database()
     spotify = spotify_api.Spotify_api()
-    print(spotify.get_track("1tjOClAkdMxDfYPO0xvGbG"))
+    #spotify.add_genres(objects.artist.Artist("7dGJo4pcD2V6oG8kP0tJRR", "Eminem"))
+    #track = spotify.fetch_track_artists(spotify.fetch_track("7lQ8MOhq6IN2w8EYcFNSUk"))
+
+    #print(track.get_name())
+    #print(track.get_artists())
+    #print(track.get_artists()[0].get_genres())
+    test = gustelify.Gustelify(spotify, db_con)
+
     library = spotify.fetch_library()
-    return flask.render_template('index.html', tracks=library)
+    test.add_library()
+    
+
+    tmp = [objects.track.Track(id="1234",name="Fick dich",artists=["MC Hurensohn"],timestamp=58),objects.track.Track(id="333",name="Wurstbrotinator",artists=["Brotwurster"],timestamp=58)]
+    return flask.render_template('index.html', tracks=tmp)
 
 
 

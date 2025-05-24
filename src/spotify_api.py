@@ -1,7 +1,7 @@
 # external
 import spotipy
 # python native
-import logging
+import logging, time
 # project
 import util.config
 import objects.track, objects.artist, objects.playlist
@@ -74,9 +74,9 @@ class Spotify_api:
     # get
     ############
 
-    def get_track(self, track_id: str):
+    def fetch_track(self, track: objects.track.Track):
         '''Pulls track from spotify api by id.'''
-        result = self.spotify.track(track_id=track_id)
+        result = self.spotify.track(track_id=track.get_id())
 
         if result is None:
             # TODO might need error handling here
@@ -88,8 +88,19 @@ class Spotify_api:
         for artist in result["artists"]:
             artists.append(objects.artist.Artist(id=artist["id"], name=artist["name"]))
 
-        return objects.track.Track(id=track_id, name=result["name"], artists=artists)
-        
+        return objects.track.Track(id=track.get_id(), name=result["name"], artists=artists, timestamp=int(time.time()))
+
+
+    def fetch_track_artists(self, track: objects.track.Track) -> objects.track.Track:
+        '''Appends artist information to track object, and updates the involved artists'''
+        artists = []
+
+        for artist in track.get_artists():
+            result = self.spotify.artist(artist.get_id())
+            artists.append(objects.artist.Artist(id=artist.get_id(), name=result["name"], genres=result["genres"]))
+
+        track.set_artists(artists)
+        return track
         
 
     def fetch_library(self) -> list[objects.track.Track]:
@@ -113,14 +124,14 @@ class Spotify_api:
                 # put artists into one list
                 artists = []
                 for artist in track["artists"]:
-                    artists.append(objects.artist.Artist(artist["id"],artist["name"]))
+                    artists.append(objects.artist.Artist(artist["id"],artist["name"], timestamp=int(time.time())))
                 
-                result_list.append(objects.track.Track(id=track["id"],name=track["name"],artists=artists))
+                result_list.append(objects.track.Track(id=track["id"],name=track["name"],artists=artists, timestamp=int(time.time())))
             offset += 50
 
         return result_list
 
-    def get_playlists(self):
+    def fetch_playlists(self):
         '''Returns a list of the users created playlists.'''
         result_list = []
         current_user_id = self.spotify.current_user()["id"]
@@ -141,3 +152,13 @@ class Spotify_api:
                     result_list.append(objects.playlist.Playlist(id=item["id"], name=item["name"], owner_id=current_user_id))
 
         return result_list
+
+    def add_genres(self, artist: objects.artist.Artist) -> objects.artist.Artist:
+        '''adds genres to artist object'''
+        result = self.spotify.artist(artist.get_id())
+        artist.set_genres = result["genres"]
+        return artist
+
+    
+    def test(self):
+        print(self.spotify.artist(""))

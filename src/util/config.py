@@ -194,4 +194,9 @@ class Config:
             "loglevel" : "info"
         }
 
+        defaultconfig["EXPIRY"] = {
+            "tracks" : 3600,
+            "artists" : 3600
+        }
+
         return defaultconfig

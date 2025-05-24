@@ -16,4 +16,5 @@ This is an attempt at automatically sorting my Spotify music using the follwing 
 - adding new songs to genre playist will maybe be done via email? dunno yet
 
 ## ToDo
-[ ] figure out how to work user independent
+- [ ] figure out how to work user independent
+- [ ] implement koppeltabellen
