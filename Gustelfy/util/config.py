@@ -8,15 +8,9 @@ import pathlib
 
 
 class Config:
-    '''
-    WARINING: Project specific changes are to be made in the marked area (CUSTOM SECTION below).
-    The following things are handled by this class:
-    - Generation of required folders
-    - Generation of config.ini
-    - Checking if config.ini is damaged and regeneration or adding missing parameters
-    - writing and reading from config.ini
-    '''
-    # class variables
+    """Handles generation of config.ini file, and accessing it.
+    """
+
     folders = {}
     INI_FILE: pathlib.Path()
     DB_FILE: pathlib.Path()
@@ -32,15 +26,63 @@ class Config:
 
     def __init__(self):
         if not self._initialized:
+            self.logger = logging.getLogger(__name__)
             self.folders["root"] = pathlib.Path(__file__).parent.parent.parent
             self.config = configparser.ConfigParser()
             self.custom_files()
             self.ensureBaseFolders()
             self._initialized = True
+
+    # ---- Getter Functions ----
     
+    def get_config(self, category, key):
+        """Returns string in given [category] and 'key'
+
+        Args:
+            category (str): [category]
+            key (str): 'key'
+
+        Returns:
+            str: content behind '='
+        """
+        try:
+            return self.config[category][key]
+        except Exception as e:
+            self.logger.error(f"Failed to read 'config.ini': {e}")
+
+    def get_datafolder(self) -> pathlib.Path:
+        return self.folders["data"]
+
+    def get_inipath(self) -> pathlib.Path:
+        return self.INI_FILE
+
+    def get_dbpath(self) -> pathlib.Path:
+        return self.DB_FILE
+
+    def get_loglevel(self) -> int:
+        '''Returns integer value of string in the config. Defaults to info'''
+        loglevel_input = self.get_config("SCRIPT","loglevel").lower()
+
+        loglevels = {"debug": 10, "info": 20, "warning": 30, "error": 40, "critical": 50}
+            
+        if loglevel_input in loglevels:
+            return loglevels[loglevel_input]
+        
+        self.logger.error("Failed to determine loglevel, defaulting to debug.")
+        return 20
+
+    # ---- Setter Functions ----
+
+    def set_config(self, category, key, value):
+        ''''Sets config option.'''
+        self.config[category][key] = value
+        self.writeConfig()
+
+    # ---- Other Functions ----
+
     def generateConfig(self):
         '''Generates entire configuration anew, this will CLEAR any previous configuration'''
-        self.config = self.custom_default_config()
+        self.config = self.default_config()
 
         self.writeConfig()
         
@@ -57,7 +99,7 @@ class Config:
             self.generateConfig()
 
         # Check if 'config.ini' is missing sections or keys
-        defaultconfig = self.custom_default_config()
+        defaultconfig = self.default_config()
         self.config.read(self.INI_FILE)
 
         # Adding missing sections/keys (Using defaultconfig as basefile)
@@ -105,59 +147,6 @@ class Config:
             except Exception as e:
                 logging.error(f"Failed to create directories for {folder_path}: {e}")
 
-    # ---- Getter Functions ----
-
-    def get_config(self, category, key):
-        '''Calling just the string within the .ini without any checks'''
-        
-        try:
-            return self.config[category][key]
-        except Exception as e:
-            logging.error(f"Failed to read 'config.ini': {e}")
-
-    def get_datafolder(self) -> pathlib.Path:
-        return self.folders["data"]
-
-    def get_inipath(self) -> pathlib.Path:
-        return self.INI_FILE
-
-    def get_dbpath(self) -> pathlib.Path:
-        return self.DB_FILE
-
-    def get_logpath(self) -> pathlib.Path:
-        pass
-
-    def get_loglevel(self) -> int:
-        '''Returns integer value of string in the config. Defaults to info'''
-        loglevel_input = self.get_config("SCRIPT","loglevel").lower()
-
-        loglevels = {"debug": 10, "info": 20, "warning": 30, "error": 40, "critical": 50}
-            
-        if loglevel_input in loglevels:
-            return loglevels[loglevel_input]
-        
-        logging.error("Failed to determine loglevel, defaulting to debug.")
-        return 20
-
-    def get_bot_prefix(self):
-        '''Attempts to get bot prefix from config.ini. Defaults to "!".'''
-        prefix = self.get_config("CLIENT","prefix")
-
-        if prefix == "":
-            logging.error("No Prefix configured, defaulted to '!'")
-            prefix = "!"
-        
-        return prefix
-
-    # ---- Setter Functions ----
-
-    def set_config(self, category, key, value):
-        ''''Sets config option.'''
-        self.config[category][key] = value
-        self.writeConfig()
-
-    # ---- Other Functions ----
-
     def custom_files(self):
         '''This is where you can add custom locations that should be handled by the class.'''
         self.folders["data"] = os.path.join(self.folders["root"], "data")
@@ -165,13 +154,20 @@ class Config:
         self.INI_FILE = os.path.join(self.folders["data"], "config.ini")
         self.DB_FILE = os.path.join(self.folders["data"], "database.db")
 
-    def custom_default_config(self):
+    def default_config(self):
         '''Here you can define the .ini file you want generated'''
         defaultconfig = configparser.ConfigParser()
 
         defaultconfig['AUTH'] = {
             "client_id" : "",
             "client_secret" : ""
+        }
+        defaultconfig['ORACLEDB'] = {
+            "username" : "username",
+            "password" : "password",
+            "host" : "172.0.0.1",
+            "port" : "1521",
+            "sid" : "amogus"
         }
         defaultconfig['SCRIPT'] = {
             "loglevel" : "info"
