@@ -167,7 +167,6 @@ class Session:
     # webserver interfaces (?)
 
 
-
 if __name__ == "__main__":
     logging.error("This file is not supposed to be executed.")
     exit()

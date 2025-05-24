@@ -69,7 +69,7 @@ class Database:
     # getter
 
     def get_track(self, track_id: str) -> objects.track.Track | None:
-        '''Returns track with provided id. Tracks within db are expected to contain artist information!'''
+        '''Returns track including artist information.'''
         self.logger.debug(f"get_track('{track_id}')")
 
         db_result = self.db_cur.execute("SELECT id_pkey,name,timestamp FROM tracks WHERE id_pkey=?",(track_id,)).fetchall()
@@ -78,13 +78,12 @@ class Database:
         if len(db_result) == 0:
             return None
 
-        result = objects.track.Track(id=db_result[0][0],name=db_result[0][1],timestamp=db_result[0][2],artists=self.get_track_artists(track_id))
-        result.set_artists(self.get_track_artists(result))
+        result = objects.track.Track(id=db_result[0][0],name=db_result[0][1],timestamp=db_result[0][2],artists=self._get_track_artists(track_id))
 
         return result
 
 
-    def get_track_artists(self, track: objects.track.Track | str) -> list[objects.artist.Artist]:
+    def _get_track_artists(self, track: objects.track.Track | str) -> list[objects.artist.Artist]:
         '''Returns artists involved with given track'''
         result_list = []
 
@@ -113,6 +112,7 @@ class Database:
         else:
             return None
     
+
     def get_all_artists(self) -> list[objects.artist.Artist]:
         '''Returns all artists present in the database.'''
         result_list = []
@@ -129,7 +129,6 @@ class Database:
         result_list = []
         db_result = self.db_cur.execute("SELECT genres.name FROM genres JOIN genres ON genres.id_pkey=artists_genres.genres_id_fkey WHERE artists.id_pkey=?", (artist.get_id(),)).fetchall()
         for item in db_result:
-            print(f"Found genre: {item}")
             result_list.append(item)
 
         return result_list
@@ -144,7 +143,6 @@ class Database:
 
         if db_result:
             for track in db_result:
-                print(self.get_track(track[0]))
                 result_list.append(self.get_track(track[0]))
 
         return result_list
@@ -160,9 +158,10 @@ class Database:
         for playlist in db_result:
             playlists.append(objects.playlist.Playlist(id=playlist[0],name=playlist[1],owner_id=user_id,is_managed=bool(playlist[2])))
             # Include tracks within playlist
-            db_result = self.db_con.execute("SELECT tracks.id_pkey,tracks.name,tracks.timestamp FROM tracks INNER JOIN playlists_content ON tracks.id_pkey=playlists_content.tracks_id_fkey WHERE playlists_content.playlists_id_fkey=?"(playlist[0],))
-            
-
+            db_result = self.db_con.execute("SELECT tracks.id_pkey FROM tracks INNER JOIN playlists_content ON tracks.id_pkey=playlists_content.tracks_id_fkey WHERE playlists_content.playlists_id_fkey=?"(playlist[0],)).fetchall()
+            tracks = []
+            for track in db_result:
+                tracks.append(self.get_track(track[0]))
 
         return playlists
 

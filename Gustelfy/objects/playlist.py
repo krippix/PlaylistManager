@@ -10,14 +10,14 @@ class Playlist:
     id: str
     name: str
     owner_id: str
-    is_managed: bool
-    tracks: list[objects.track.Track]
+    managed: bool
+    tracks = []
     
     def __init__(self, id=str, name=str, owner_id=str, **kwargs):
         self.set_id(id)
         self.set_name(name)
         self.set_owner_id(owner_id)
-        self.is_managed = kwargs.get("is_managed",False)
+        self.managed = kwargs.get("is_managed",False)
         self.tracks = kwargs.get("tracks",[])
 
     def __str__(self):
@@ -35,7 +35,7 @@ class Playlist:
         return self.name
     
     def is_managed(self) -> bool:
-        return self.is_managed
+        return self.managed
 
     
     #########
@@ -54,4 +54,4 @@ class Playlist:
         self.owner_id = id
 
     def set_managed(self, is_managed: bool):
-        self.is_managed = is_managed
+        self.managed = is_managed
