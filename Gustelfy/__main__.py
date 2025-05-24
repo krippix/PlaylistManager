@@ -4,5 +4,12 @@ import logging
 import sys
 # project
 from Gustelfy import app
+from Gustelfy import test
 
-app.test()
+
+if len(sys.argv) > 1:
+    if sys.argv[1] == "db":
+        test.db_connection()
+else:
+    print("That doesent work yet :harold:")
+
