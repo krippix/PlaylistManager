@@ -31,8 +31,3 @@ The follwing data will be saved in the database
 - playlists
 - tracks
 - users
-
-## ToDo
-
-- [ ] figure out how to work user independent
-- [ ] implement pairing table usage
