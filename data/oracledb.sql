@@ -1,10 +1,14 @@
 CREATE TABLE USERS (
     id_pkey VARCHAR(22) PRIMARY KEY,
-    display_name NVARCHAR2(30) NOT NULL,
+    display_name NVARCHAR2(30),
     image_url VARCHAR(200),
-    api_token VARCHAR(32),
+    access_token VARCHAR(512),
+    token_type VARCHAR(20),
+    expires_in NUMBER(20),
     expires_at NUMBER(20),
+    scope VARCHAR(512),
     email VARCHAR(256),
+    refresh_token VARCHAR(512),
     timestamp NUMBER(20)
 );
 CREATE TABLE PLAYLISTS (
