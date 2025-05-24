@@ -42,11 +42,15 @@ def api():
     #result = spotify.fetch_track('21ownMQ51Jqlv8si9CTI6R')
     #result = spotify.fetch_album("1kTlYbs28MXw7hwO0NLYif")
     #result = spotify.fetch_artist("7cHFXNgK44YndrHbEQWsZR")
-    result = spotify.fetch_playlist("7mLX2PXRtFqZs5j1GXc7hA")
+    result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH",json=True)
     with open('test.json', 'w') as amogus:
         json.dump(result,amogus,indent=3)
-    
-    print(result)
+
+    result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH",json=False)
+    with open('test2.json', 'w') as amogus:
+        json.dump(result,amogus,indent=3)
+    #print(len(result["tracks"]["items"]))
+
 
 
 def db_connection():
