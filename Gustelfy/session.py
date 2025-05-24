@@ -6,7 +6,7 @@ import time
 from Gustelfy import spotify_api
 from Gustelfy.database import database
 from Gustelfy.util import config
-from Gustelfy.objects import track, playlist
+from Gustelfy.objects import album, artist, playlist, track, user
 
 
 class Session:
@@ -14,13 +14,13 @@ class Session:
     
     spotify: spotify_api.Spotify_api
     db_con: database.Database
-    user_id: str
+    user: user.User
 
-    def __init__(self, spotify: spotify_api.Spotify_api, database: database.Database):
+    def __init__(self, user: user.User, spotify: spotify_api.Spotify_api, database: database.Database):
         self.spotify = spotify
         self.db_con = database
-        self.user_id = self.spotify.get_user_id()
-        self.logger = logging.getLogger(f"Gustelfy.session.{self.user_id}")
+        self.user = user
+        self.logger = logging.getLogger(f"{__name__}:{user.get_id()}")
         self.logger.info("Initialized session.")
 
     # ---- Getter Functions ----
