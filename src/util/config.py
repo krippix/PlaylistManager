@@ -15,6 +15,7 @@ class Config:
     # class variables
     folders = {}
     INI_FILE: pathlib.Path()
+    DB_FILE: pathlib.Path()
     config: configparser.ConfigParser()
     
     ########################
@@ -28,6 +29,7 @@ class Config:
         #self.folders["sounds_default"] = os.path.join(self.folders["sounds"], "default") # Hardcoded folders, cannot be played with /play command
         #self.folders["sounds_custom"] = os.path.join(self.folders["sounds"], "custom")
         self.INI_FILE = os.path.join(self.folders["data"], "config.ini")
+        self.DB_FILE = os.path.join(self.folders["data"], "database.db")
 
         
     def custom_default_config(self):
@@ -149,6 +151,9 @@ class Config:
 
     def get_inipath(self) -> pathlib.Path:
         return self.INI_FILE
+
+    def get_dbpath(self) -> pathlib.Path:
+        return self.DB_FILE
 
 
     def get_logpath(self) -> pathlib.Path:
