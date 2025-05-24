@@ -3,7 +3,7 @@ import spotipy, flask
 # python native
 import logging, os
 # project
-import util
+import util.config
 import objects.artist, objects.track
 import session, spotify_api
 
@@ -41,7 +41,7 @@ def index():
     #print(track.get_name())
     #print(track.get_artists())
     #print(track.get_artists()[0].get_genres())
-    test = gustelify.Gustelify(spotify, db_con)
+    test = session.Gustelify(spotify, db_con)
 
     library = spotify.fetch_library()
     test.add_library()

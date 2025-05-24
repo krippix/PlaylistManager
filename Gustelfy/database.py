@@ -7,7 +7,7 @@ import util.config
 import objects.artist, objects.track, objects.playlist
 
 class Database:
-    '''This class manages the database of this Project'''
+    '''This class is used to read/write from/to the database.'''
     
     db_con: sqlite3.Connection
     db_cur: sqlite3.Cursor
@@ -18,6 +18,7 @@ class Database:
 
     def __init__(self):
         '''Connects to the existing database, or creates it anew.'''
+        self.logger = logging.getLogger("Gustelify.database")
         settings = util.config.Config()
         self.db_con = sqlite3.connect(settings.get_dbpath())
         self.db_cur = self.db_con.cursor()
@@ -136,9 +137,18 @@ class Database:
         return result_list
 
 
-    def get_library(self, user_id: str) -> list[objects.track.Track]:
-        '''Returns song in provided users library'''
-        #db_result = self.db_cur.execute("SELECT tracks.id_pkey,tracks.name").fetchall()
+    def get_library(self, user_id: str) -> list[objects.track.Track] | None:
+        '''Returns songs in users (offline cached) library.'''
+        result_list = []
+        db_result = self.db_cur.execute("SELECT tracks_id_fkey FROM libraries WHERE users_id_fkey=?",(user_id,)).fetchall()
+
+        if db_result:
+            for track in db_result:
+                self.logger.debug(f"Adding track with id '{track[0]}' to resulting list.")
+                result_list.append(self.get_track(track[0]))
+
+        return result_list
+
 
     ################
     # modifications

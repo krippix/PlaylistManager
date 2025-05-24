@@ -9,27 +9,35 @@ import objects.track
 class Session:
     '''Entrypoint for any data manipulation. Combines database and spotify API access. This will (probably) represent a user session.'''
     spotify: spotify_api.Spotify_api
-    database: database.Database
+    db_con: database.Database
     user_id: str
 
     def __init__(self, spotify: spotify_api.Spotify_api, database: database.Database):
+        self.logger = logging.getLogger("Gustelfy.session") #TODO include userid here once it's properly instancialized
         self.spotify = spotify
-        self.database = database
+        self.db_con = database
 
+    ##########
+    # get
+
+
+    
+    
+    
     ##########
     # add / set
 
     def add_track(self, track: objects.track.Track):
         '''Adds track to local db.'''
-        db_track = self.database.get_track(track.get_id())
+        db_track = self.db_con.get_track(track.get_id())
         if db_track is None or track != db_track or db_track.is_expired():
-            self.database.add_track(self.spotify.fetch_track(track))
+            self.db_con.add_track(self.spotify.fetch_track(track))
         
         # check if artist information of track is up to date
         for artist in track.get_artists():
-            db_artist = self.database.get_artist(artist.get_id())
+            db_artist = self.db_con.get_artist(artist.get_id())
             if db_artist is None or db_artist.is_expired():
-                self.database.add_artist(self.spotify.fetch_artist())
+                self.db_con.add_artist(self.spotify.fetch_artist())
             
 
     def add_library(self):
@@ -53,16 +61,13 @@ class Session:
 
 
     def update_database(self):
-        '''Updates database with songs in user's library and RELEVANT playlists.'''
+        '''Updates all track entries in database. This shouldnt change which songs are in the database but update names and artist information.'''
 
     
     def update_database_artists(self):
         '''Searches database for outdated artists.'''
-        self.database.get_artist()
+        self.db_con.get_artist()
 
-    
-    def update_tracks(self):
-        '''Updates all track entries in database.'''
 
     def update_library(self):
         '''Updates users library'''
@@ -70,15 +75,56 @@ class Session:
     ##########
     # compare
 
-    def compare_library(self) -> list[tuple[objects.track.Track,objects.track.Track]]:
-        '''Compares user library to locally stored library image. Returns list of tuples containing (added,removed) tracks'''
+    def compare_library(self) -> tuple[list[objects.track.Track],list[objects.track.Track]]:
+        '''Returns tuple of list of changed tracks in library: (added,removed)'''
 
-        #self.database.get_
+        local_lib = self.db_con.get_library(self.user_id)
+        online_lib = self.spotify.fetch_library()
+
+        # Creates list of songs that exist in both local and online library
+        overlap = [local_track for local_track in local_lib for online_track in online_lib if local_track.get_id() == online_track.get_id()]
+
+        added = []
+        removed = []
+
+        # Creates lists off added and removed songs
+        for overlap_track in overlap:
+            
+            match_found = False
+            for local_track in local_lib:
+                if local_track.get_id() == overlap_track.get_id():
+                    match_found = True
+                    break
+            if not match_found:
+                removed.append(local_track)
+
+            match_found = False
+            for online_track in online_lib:
+                if online_track.get_id() == overlap_track.get_id():
+                    match_found = True
+                    break
+            if not match_found:
+                added.append(online_track)
+
+        return (added,removed)
+
+        
+def kekw(a,b):
+    print(f"a: {a}  b: {b}")
+    if a==b:
+        return a
 
 
+def test():
+    numbers = [1,2,3,4,5,6,'f']
+    letters = ['a','b','c','d','e','f']
 
+    test = [kekw(number,letter) for number in numbers for letter in letters]
+    test = [i for i in test if i is not None]
+    print(test)
 
 
 if __name__ == "__main__":
     logging.error("This file is not supposed to be executed.")
+    test()
     exit()
