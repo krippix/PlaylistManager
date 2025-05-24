@@ -25,6 +25,12 @@ class Gustelify:
         db_track = self.database.get_track(track.get_id())
         if db_track is None or track != db_track or db_track.is_expired():
             self.database.add_track(self.spotify.fetch_track(track))
+        
+        # check if artist information of track is up to date
+        for artist in track.get_artists():
+            db_artist = self.database.get_artist(artist.get_id())
+            if db_artist is None or db_artist.is_expired():
+                self.database.add_artist(self.spotify.fetch_artist())
             
 
     def add_library(self):

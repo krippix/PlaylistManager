@@ -86,7 +86,7 @@ class Spotify_api:
         # add artists ids into list
         artists = []
         for artist in result["artists"]:
-            artists.append(objects.artist.Artist(id=artist["id"], name=artist["name"]))
+            artists.append(objects.artist.Artist(id=artist["id"], name=artist["name"], timestamp=int(time.time())))
 
         return objects.track.Track(id=track.get_id(), name=result["name"], artists=artists, timestamp=int(time.time()))
 
@@ -101,7 +101,10 @@ class Spotify_api:
 
         track.set_artists(artists)
         return track
-        
+    
+
+    def fetch_artist(self, id: str) -> objects.artist.Artist:
+        '''Returns one artist based on input id.'''
 
     def fetch_library(self) -> list[objects.track.Track]:
         '''Takes all tracks from users library and returns them as List of song objects'''
@@ -128,8 +131,8 @@ class Spotify_api:
                 
                 result_list.append(objects.track.Track(id=track["id"],name=track["name"],artists=artists, timestamp=int(time.time())))
             offset += 50
-
         return result_list
+
 
     def fetch_playlists(self):
         '''Returns a list of the users created playlists.'''
