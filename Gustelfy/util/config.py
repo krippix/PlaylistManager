@@ -116,7 +116,7 @@ class Config:
             logging.error(f"Failed to read 'config.ini': {e}")
 
     def get_datafolder(self) -> pathlib.Path:
-        return self.DATA_FOLDER
+        return self.folders["data"]
 
     def get_inipath(self) -> pathlib.Path:
         return self.INI_FILE
@@ -162,7 +162,6 @@ class Config:
         '''This is where you can add custom locations that should be handled by the class.'''
         self.folders["data"] = os.path.join(self.folders["root"], "data")
         self.folders["templates"] = os.path.join(self.folders["root"], "templates")
-        #self.folders["sounds_custom"] = os.path.join(self.folders["sounds"], "custom")
         self.INI_FILE = os.path.join(self.folders["data"], "config.ini")
         self.DB_FILE = os.path.join(self.folders["data"], "database.db")
 
