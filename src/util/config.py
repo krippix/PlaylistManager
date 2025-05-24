@@ -175,8 +175,7 @@ class Config:
     def custom_files(self):
         '''This is where you can add custom locations that should be handled by the class.'''
         self.folders["data"] = os.path.join(self.folders["root"], "data")
-        #self.folders["sounds"] = os.path.join(self.folders["data"], "sounds")
-        #self.folders["sounds_default"] = os.path.join(self.folders["sounds"], "default") # Hardcoded folders, cannot be played with /play command
+        self.folders["templates"] = os.path.join(self.folders["root"], "templates")
         #self.folders["sounds_custom"] = os.path.join(self.folders["sounds"], "custom")
         self.INI_FILE = os.path.join(self.folders["data"], "config.ini")
         self.DB_FILE = os.path.join(self.folders["data"], "database.db")

@@ -4,7 +4,8 @@ class Track:
 
     id: str
     name: str
-    artist = []
+    artists = []
+    timestamp: int
     
     def __init__(self, id: str, name: str, artists: list):
         '''Creates new artist object with the provided data'''
@@ -15,9 +16,36 @@ class Track:
             self.set_artists(artists)
 
     def __str__(self):
+        '''Defines behaviour within print statements.'''
         return self.name
+
     def __repr__(self):
+        '''Defines behaviour if eg. withn a list in a print statement: [object,]'''
         return self.__str__()
+
+    def __eq__(self, other):
+        '''Defines behaviour of == operator'''
+
+        if self.id != other.id:
+            return False
+        if self.name != other.name:
+            return False
+        
+        # Check if each artist exists
+        if len(self.get_artists()) != len(other.get_artists()):
+            return False
+        for artist in self.get_artists():
+            found = False
+            current_id = artist.get_id()
+            other_artists = other.get_artists()
+            for other_artist in other_artists:
+                if current_id == other_artist.get_id():
+                    found = True
+                    break
+            if not found:
+                return False
+        return True
+
 
     ########
     # getter
@@ -26,10 +54,14 @@ class Track:
         return self.id
     
     def get_name(self) -> str:
-        return self.id
+        return self.name
 
     def get_artists(self) -> list:
         '''Returns list containing artist objects'''
+        return self.artists
+
+    def get_timestamp(self) -> int:
+        return self.timestamp
     
     
     #########
@@ -44,7 +76,8 @@ class Track:
         self.name = name
    
     def set_artists(self, artists: list):
-        '''Takes a list of artists and adds them to the track'''
+        '''Takes a list of artists and sets them for the track object'''
+        self.artists = []
         for artist in artists:
-            self.artist.append(artist)
+            self.artists.append(artist)
         

@@ -65,8 +65,10 @@ class Database:
 
 
     ################
-    # getter-ish
-    ################
+    # getter
+
+    def get_track(self, id: str) -> objects.track.Track:
+        '''Returns track with provided id. Tracks within db are expected to contain artist information!'''
 
     def get_artist(self, id: str) -> objects.artist.Artist | None:
         '''Returns artist in database based on spotify id.'''
@@ -77,10 +79,12 @@ class Database:
         else:
             return None
 
+    def get_library(self, user_id: str) -> list[objects.track.Track]:
+        '''Returns song in provided users library'''
+        db_result = self.db_cur.execute("SELECT tracks.id_pkey,tracks.name").fetchall()
 
     ################
     # modifications
-    ################
 
     def add_artist(self, artist: objects.artist.Artist):
         '''Adds artist to the database. Updates if artist already exists.'''
@@ -94,14 +98,21 @@ class Database:
             self.db_cur.execute("UPDATE artists SET name = ?, timestamp = ? WHERE id_pkey = ?",(artist.get_name(), timestamp, artist.get_id()))
         
         self.db_con.commit()
-        
+
+
+    def attach_artist(self, track: objects.track.Track) -> objects.track.Track:
+        '''Takes song object and adds (local) artist information to it.'''
+        #TODO db_result = self.db_cur.execute("SELECT ").fetchall()
+
 
     def add_track(self, track: objects.track.Track):
-        '''Adds track to the database. Updates if it already exists'''
+        '''Adds track to the database. Updates if it already exists. Updates artist data if neccessary.'''
         timestamp = int(time.time())
 
+        # attempt to pull track with given track id from database
         db_result = self.db_cur.execute("SELECT id_pkey,name,timestamp FROM tracks WHERE id_pkey == ?", (track.get_id(),)).fetchall()
 
+        # if nothing is found, simply add the new song into the db, else update entry
         if len(db_result) == 0:
             self.db_cur.execute("INSERT INTO tracks (id_pkey,name,timestamp) VALUES (?,?,?)", (track.get_id(), track.get_name(), timestamp))
         else:
@@ -118,7 +129,7 @@ class Database:
         '''Adds playlist to the database'''
 
     def ensure_artists(self, track: objects.track.Track):
-        '''Provides track file with artist information either from local db or spotify api.'''
+        '''Ensures that artist information of the track is available. Pulls from spotify if data is too old or doesent exist.'''
         db_con = util.database.Database()
 
         for artist in track.get_artists:
