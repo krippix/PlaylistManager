@@ -5,7 +5,7 @@ import logging, os
 # project
 import util.config
 import objects.artist, objects.track
-import session, spotify_api
+import session, spotify_api, database
 
 # prepare project configuration
 settings = util.config.Config()
@@ -24,7 +24,7 @@ app = flask.Flask(__name__, root_path=settings.folders["root"], template_folder=
 
 @app.before_first_request
 def before_first_request():
-    db_con = util.database.Database()
+    db_con = database.Database()
     db_con.ensure_default_tables()
     # spotify api connection
     spotify = spotify_api.Spotify_api()
@@ -33,7 +33,7 @@ def before_first_request():
 @app.route('/')
 def index():
     # Database init
-    db_con = util.database.Database()
+    db_con = database.Database()
     spotify = spotify_api.Spotify_api()
     #spotify.add_genres(objects.artist.Artist("7dGJo4pcD2V6oG8kP0tJRR", "Eminem"))
     #track = spotify.fetch_track_artists(spotify.fetch_track("7lQ8MOhq6IN2w8EYcFNSUk"))
@@ -41,14 +41,14 @@ def index():
     #print(track.get_name())
     #print(track.get_artists())
     #print(track.get_artists()[0].get_genres())
-    test = session.Gustelify(spotify, db_con)
+    user_session = session.Session(spotify, db_con)
 
-    library = spotify.fetch_library()
-    test.add_library()
+    data = user_session.get_homepage_data()
+    
     
 
-    tmp = [objects.track.Track(id="1234",name="Fick dich",artists=["MC Hurensohn"],timestamp=58),objects.track.Track(id="333",name="Wurstbrotinator",artists=["Brotwurster"],timestamp=58)]
-    return flask.render_template('index.html', tracks=tmp)
+    #tmp = [objects.track.Track(id="1234",name="Fick dich",artists=["MC Hurensohn"],timestamp=58),objects.track.Track(id="333",name="Wurstbrotinator",artists=["Brotwurster"],timestamp=58)]
+    return flask.render_template('index.html', dict=data)
 
 
 if __name__ == "__main__":

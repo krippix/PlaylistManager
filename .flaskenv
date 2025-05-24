@@ -1,4 +1,4 @@
-FLASK_APP=src/app
+FLASK_APP=Gustelfy/app
 FLASK_ENV=development
 FLASK_DEBUG=0
 

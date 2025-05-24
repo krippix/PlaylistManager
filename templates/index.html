@@ -2,18 +2,22 @@
 
 {% block content %}
     <h1>{% block title %} GustelFlasche Sätsch {% endblock %}</h1>
+    <h2>Overview for {{ dict["display_name"] }}</h2>
     <table>
         <tr>
             <th>Nr.</th>
-            <th>Track</th>
-            <th>Artist(s)</th>
+            <th>Name</th>
+            <th>IsGenrePlaylist</th>
         </tr>
-        {% for track in tracks %}
+        {% for playlist in dict["playlists"] %}
         <tr>
             <td></td>
-            <td>{{ track.get_name() }}</td>
-            <td>{{ track.get_artists()[0] }}</td>
+            <td>{{ playlist[0] }}</td>
+            <td>{{ playlist[1] }}</td>
         </tr>
         {% endfor %}
+
+        <a>{{ dict["changes"] }}</a>
+
     </table>
 {% endblock %}

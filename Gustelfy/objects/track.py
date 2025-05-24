@@ -66,7 +66,7 @@ class Track:
     def get_name(self) -> str:
         return self.name
 
-    def get_artists(self) -> list:
+    def get_artists(self) -> list[objects.artist.Artist]:
         '''Returns list containing artist objects'''
         return self.artists
 
