@@ -14,6 +14,7 @@ class Spotify_api:
 
     spotify: spotipy.Spotify
     settings: config.Config
+    user: user.User
     client_id: str
     client_secret: str
     scopes = [
@@ -25,7 +26,7 @@ class Spotify_api:
             "playlist-modify-public"
         ]
 
-    def __init__(self):
+    def __init__(self, user=None):
         # fetch credentials from config.ini
         self.logger = logging.getLogger(__name__)
         self.settings = config.Config()
@@ -83,13 +84,24 @@ class Spotify_api:
 
     # -- Fetch --
 
-    def fetch_album(self, album_id: str) -> album.Album:
+    def fetch_album(self, album_id: str, json=False) -> album.Album:
+        """Pulls album information an track information
+
+        Args:
+            album_id (str): Spotify ID of the album to fetch
+            json (bool, optional): _description_. Defaults to False.
+
+        Returns:
+            album.Album: _description_
+        """
         self.logger.debug(f"fetch_album({album_id})")
         try:
             result = self.spotify.album(album_id)
         except Exception as e:
             logging.error(f"Album with id '{album_id}' not found.\n{e}")
             return None
+        if json:
+            return result
     
         # get artists
         artist_list = []
@@ -158,7 +170,52 @@ class Spotify_api:
         )
         return artist_result
 
+    def fetch_playlists(self, json=False) -> list[playlist.Playlist]:
+        """Returns list of the users playlists
+
+        Args:
+            json (bool, optional): Returns json result. Defaults to False.
+
+        Returns:
+            list[playlist.Playlist]: list of playlists
+        """
+        self.logger.debug(f"fetch_playlists()")
+
+        # Return raw json
+        if json:
+            return self.spotify.current_user_playlists(limit=50,offset=0)
+
+        # fetch all playlists
+        done = False
+        offset = 0
+        playlist_list = []
+        while not done:
+            results = self.spotify.current_user_playlists(limit=50,offset=offset)
+
+            # Append Playlists
+            for lst in result["items"]:
+                playlist_list.append(playlist.Playlist(
+                    id=lst["id"],
+                    name=lst["name"],
+                    owner_id=lst["owner"]["id"],
+                    user_id=self.user.get_id(),
+                    image_url=lst["images"]["url"]
+                ))
+            if len(playlist_list >= result["total"]):
+                done = True
+            offset += 50
+        return playlist_list
+
     def fetch_playlist(self, playlist_id: str,json=False) -> playlist.Playlist:
+        """Returns Playlist and it's songs
+
+        Args:
+            playlist_id (str): Spotify Playlist id
+            json (bool, optional): Returns raw api result. Defaults to False.
+
+        Returns:
+            playlist.Playlist: _description_
+        """
         self.logger.debug(f"fetch_playlist({playlist_id})")
         try:
             result = self.spotify.playlist(playlist_id)
@@ -173,7 +230,7 @@ class Spotify_api:
         playlist_result = playlist.Playlist(
             id=playlist_id,
             name=result["name"],
-            creator_id=result["owner"]["id"],
+            owner_id=result["owner"]["id"],
             tracks=playlist_tracks,
             description=result["description"],
             image_url=result["images"][0]["url"],
@@ -181,6 +238,14 @@ class Spotify_api:
         return playlist_result
 
     def __fetch_playlist_tracks(self, playlist_id: str) -> list[track.Track]:
+        """Gets detailed playlist track information
+
+        Args:
+            playlist_id (str): _description_
+
+        Returns:
+            list[track.Track]: _description_
+        """
         result = {"total":1}
         offset = 0
         track_list = []
@@ -290,10 +355,9 @@ class Spotify_api:
         # fetch favorites
         done = False
         offset = 0
+        track_list = []
         while not done:
             result = self.spotify.current_user_saved_tracks(limit=50,offset=offset)
-            # get track
-            track_list = []
             for trk in results["items"]:
                 # Get album artists
                 album_artists = []
@@ -335,57 +399,7 @@ class Spotify_api:
                 done = True
             else:
                 offset += 50
-        return result_list
-
-    def fetch_playlists(self, json=False) -> list[playlist.Playlist]:
-        '''Returns a list of the users created playlists.'''
-        self.logger.debug(f"fetch_playlists()")
-        
-        result_list = []
-        current_user_id = self.spotify.current_user()["id"]
-
-        # fetch all playlists
-        done = False
-        offset = 0
-
-        # iterate over playlist collection
-        while not done:
-            results = self.spotify.current_user_playlists(limit=50,offset=offset)
-
-            if len(results["items"]) < 50:
-                done = True
-
-            for item in results["items"]:
-                if item["owner"]["id"] == current_user_id:
-                    result_list.append(playlist.Playlist(id=item["id"], name=item["name"], owner_id=current_user_id))
-
-        return result_list
-
-    
-    def fetch_playlist_songs(self, playlist_id: str) -> list[track.Track]:
-        '''Returns list of songs in given playlist.'''
-        self.logger.debug(f"fetch_playist_songs({playlist_id})")
-        
-        tracks = []
-
-        api_result = self.spotify.playlist_tracks(playlist_id=playlist_id)
-
-        for track in api_result["item"]:
-            # Handle artists in track
-            artists = []
-            for artist in track["track"]["artists"]:
-                artists.append(artist.Artist(id=artist["id"],name=artist["name"],timestamp=int(time.time())))
-            # Create final track object
-            tracks.append(track.Track(id=track["track"]["id"],name=track["track"]["name"],artists=artists,timestamp=int(time.time())))
-        
-        return tracks
-
-
-    def add_genres(self, artist: artist.Artist) -> artist.Artist:
-        '''adds genres to artist object'''
-        result = self.spotify.artist(artist.get_id())
-        artist.set_genres = result["genres"]
-        return artist
+        return track_list
 
 
 if __name__ == "__main__":

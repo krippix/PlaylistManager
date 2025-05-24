@@ -7,7 +7,7 @@ from Gustelfy.objects import track
 
 class Playlist(spotifyObject.SpotifyObject):
     
-    creator_id: str
+    owner_id: str
     managed: bool
     tracks = []
     description: str
@@ -17,7 +17,7 @@ class Playlist(spotifyObject.SpotifyObject):
     def __init__(self, 
                 id: str, 
                 name: str,
-                creator_id: str,
+                owner_id: str,
                 tracks=[],
                 managed=0,
                 timestamp=int(time.time()),
@@ -32,7 +32,7 @@ class Playlist(spotifyObject.SpotifyObject):
             id (str): Spotify ID of the Playlist
             name (str): Playlist (display) name
             user_id (str): Spotify ID of the user following the playlist in this context
-            creator_id (str): Spotify ID of the Playlist creator
+            owner_id (str): Spotify ID of the Playlist owner
             tracks (list, optional): tracks within the playlist. Defaults to [].
             managed (int, optional): Whether or not the playlist will be managed by this software. Defaults to 0.
             timestamp (int, optional): timestamp integer. Defaults to int(time.time()).
@@ -44,7 +44,7 @@ class Playlist(spotifyObject.SpotifyObject):
         self.set_timestamp(timestamp)
 
         self.set_user_id(user_id)
-        self.set_creator_id(creator_id)
+        self.set_owner_id(owner_id)
         self.set_tracks(tracks)
         self.set_managed(managed)
         self.set_description(description)
@@ -56,8 +56,8 @@ class Playlist(spotifyObject.SpotifyObject):
     def get_user_id(self) -> str:
         return self.user_id
 
-    def get_creator_id(self) -> str:
-        return self.creator_id
+    def get_owner_id(self) -> str:
+        return self.owner_id
 
     def is_managed(self) -> bool:
         if self.managed:
@@ -82,8 +82,8 @@ class Playlist(spotifyObject.SpotifyObject):
     def set_user_id(self, user_id: str):
         self.user_id = user_id
 
-    def set_creator_id(self, creator_id: str):
-        self.creator_id = creator_id
+    def set_owner_id(self, owner_id: str):
+        self.owner_id = owner_id
 
     def set_tracks(self, tracks: list[track.Track]):
         self.tracks = tracks
@@ -117,7 +117,7 @@ class Playlist(spotifyObject.SpotifyObject):
             return False
         if self.get_name() != other.get_name():
             return False
-        if self.get_creator_id() != other.get_creator_id():
+        if self.get_owner_id() != other.get_owner_id():
             return False
         if self.is_managed() != other.is_managed():
             return False

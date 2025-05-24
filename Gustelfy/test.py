@@ -43,11 +43,12 @@ def api():
     #result = spotify.fetch_album("1kTlYbs28MXw7hwO0NLYif")
     #result = spotify.fetch_artist("1ehBmvzykgp3Il0BUIZdev",json=True)
     #result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH",json=True)
-    result = spotify.fetch_favorites(json=True)
+    #result = spotify.fetch_favorites(json=True)
+    result = spotify.fetch_playlists(json=True)
     with open('test.json', 'w') as amogus:
         json.dump(result,amogus,indent=3)
-    result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH")
-    print(result.get_tracks())
+    #result = spotify.fetch_playlist("349T3IRkkkTyBc1SqyP1JH")
+    #print(result.get_tracks())
 
 """
     result = spotify.test("349T3IRkkkTyBc1SqyP1JH")
