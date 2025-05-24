@@ -35,9 +35,11 @@ class Track(spotifyObject.SpotifyObject):
         self.set_timestamp(timestamp)
         self.set_artists(artists)
         self.set_duration(duration_ms)
+        self.set_album(album)
         self.set_disc_number(disc_number)
         self.set_track_number(track_number)
-        self.set_explicit(explicit)        
+        self.set_explicit(explicit)
+        self.set_popularity(popularity)        
 
     # ---- Getter Functions ----
 
@@ -57,11 +59,14 @@ class Track(spotifyObject.SpotifyObject):
         """
         return self.duration
 
-    def get_album(self) -> album.Album:
+    def get_album(self) -> 'album.Album':
         return self.album
 
     def get_disc_number(self) -> int:
         return self.disc_number
+
+    def get_track_number(self) -> int:
+        return self.track_number
 
     def is_explicit(self) -> int:
         """Returns bool value of explicity as int 1 or 0
@@ -93,11 +98,14 @@ class Track(spotifyObject.SpotifyObject):
         """
         self.duration = duration
 
-    def set_album(self, album: album.Album):
-        self.album_id = album_id
+    def set_album(self, album: 'album.Album'):
+        self.album_id = album
 
     def set_disc_number(self, number: int):
         self.disc_number = number
+
+    def set_track_number(self, track_number: int):
+        self.track_number = track_number
 
     def set_explicit(self, explicit: bool):
         self.explicit = explicit

@@ -1,6 +1,6 @@
 # external
 # python native
-import time, logging
+import time, logging, json
 # project
 from Gustelfy.database import database
 from Gustelfy.objects import album, artist, playlist, track, user
@@ -37,13 +37,15 @@ def api():
     spotify = spotify_api.Spotify_api()
     result = {}
     
-    try:
-        # Turbo thomas: 2vWnOXI1ALzlvNTdjVPMG1
-        # Rap über hass: 21ownMQ51Jqlv8si9CTI6R
-        result = spotify.fetch_track('21ownMQ51Jqlv8si9CTI6R')
-    except Exception as e:
-        print(e)
-        print("sugoma")
+    # Turbo thomas: 2vWnOXI1ALzlvNTdjVPMG1
+    # Rap über hass: 21ownMQ51Jqlv8si9CTI6R
+    #result = spotify.fetch_track('21ownMQ51Jqlv8si9CTI6R')
+    #result = spotify.fetch_album("1kTlYbs28MXw7hwO0NLYif")
+    #result = spotify.fetch_artist("7cHFXNgK44YndrHbEQWsZR")
+    result = spotify.fetch_playlist("7mLX2PXRtFqZs5j1GXc7hA")
+    with open('test.json', 'w') as amogus:
+        json.dump(result,amogus,indent=3)
+    
     print(result)
 
 
