@@ -13,10 +13,11 @@ class Session:
     user_id: str
 
     def __init__(self, spotify: spotify_api.Spotify_api, database: database.Database):
-        self.logger = logging.getLogger("Gustelfy.session") #TODO include userid here once it's properly instancialized
         self.spotify = spotify
         self.db_con = database
         self.user_id = self.spotify.get_user_id()
+        self.logger = logging.getLogger(f"Gustelfy.session.{self.user_id}")
+        self.logger.info("Initialized session.")
 
     ##########
     # get
@@ -31,6 +32,8 @@ class Session:
         }
         # TODO somehow have to recieve the users decisions from the flask server.
         '''
+        self.logger.debug("get_homepage_data()")
+
         result = {
             "display_name": self.spotify.get_display_name(),
             "playlists": self.spotify.fetch_playlists(),
@@ -42,9 +45,14 @@ class Session:
 
     def get_library_changes(self) -> tuple[list[objects.track.Track],list[objects.track.Track]]:
         '''Returns tuple of list of changed tracks in library: (added,removed)'''
+        self.logger.debug("get_library_changes()")
 
         local_lib = self.db_con.get_library(self.user_id)
         online_lib = self.spotify.fetch_library()
+
+        print(local_lib)
+        print("'##########################################")
+        print(online_lib)
 
         # Creates list of songs that exist in both local and online library
         overlap = [local_track for local_track in local_lib for online_track in online_lib if local_track.get_id() == online_track.get_id()]
@@ -52,24 +60,28 @@ class Session:
         added = []
         removed = []
 
-        # Creates lists off added and removed songs
-        for overlap_track in overlap:
-            
+        # Create list of removed tracks
+        for local_track in local_lib:
             match_found = False
-            for local_track in local_lib:
+            for overlap_track in overlap:
                 if local_track.get_id() == overlap_track.get_id():
                     match_found = True
                     break
             if not match_found:
                 removed.append(local_track)
-
+        
+        # Create list of added tracks
+        for online_track in online_lib:
             match_found = False
-            for online_track in online_lib:
+            for overlap_track in overlap:
                 if online_track.get_id() == overlap_track.get_id():
                     match_found = True
                     break
             if not match_found:
                 added.append(online_track)
+        
+        self.logger.info(f"{len(added)} new tracks added.")
+        self.logger.info(f"{len(removed)} tracks have been removed.")
 
         return (added,removed)
 
@@ -79,6 +91,7 @@ class Session:
 
     def add_track(self, track: objects.track.Track):
         '''Attempts to add track to local database. Updates if already present and expired.'''
+        self.logger.debug("add_track()")
         
         # Check if track is already part of the database
         db_track = self.db_con.get_track(track.get_id())
@@ -92,12 +105,16 @@ class Session:
                 self.db_con.add_artist(self.spotify.fetch_artist())
             
 
-    def update_library(self):
+    def commit_library_changes(self, changes: tuple[list[objects.track.Track],list[objects.track.Track]]):
         '''Updates the current user's library in the database.'''
+        self.logger.debug("update_library()")
+
         library = self.spotify.fetch_library()
 
         for track in library:
             self.add_track(track)
+
+        self.db_con.update_library(self.user_id, changes)
 
 
     ##########
@@ -105,6 +122,8 @@ class Session:
 
     def update_user(self):
         '''Updates the spotify users profile, including: library, playlists their content, genres and artist information.'''
+        self.logger.debug("update_user()")
+        
         # check if displayname changed or smth like that
 
         # pull library
@@ -114,15 +133,18 @@ class Session:
 
     def update_database(self):
         '''Updates all track entries in database. This shouldnt change which songs are in the database but update names and artist information.'''
-
+        self.logger.debug("update_database()")
     
     def update_database_artists(self):
         '''Searches database for outdated artists.'''
+        self.logger.debug("update_database_artists()")
+
         self.db_con.get_artist()
 
 
     def update_library(self):
         '''Updates users library'''
+        self.logger.debug("update_library()")
 
     ##########
     # compare

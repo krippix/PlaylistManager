@@ -143,6 +143,7 @@ class Spotify_api:
                 
                 result_list.append(objects.track.Track(id=track["id"],name=track["name"],artists=artists, timestamp=int(time.time())))
             offset += 50
+        
         return result_list
 
 

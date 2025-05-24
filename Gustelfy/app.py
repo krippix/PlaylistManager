@@ -12,9 +12,9 @@ settings = util.config.Config()
 settings.checkConfig()
 
 # Logging config
-logger = logging.getLogger("Gustelify")
+logger = logging.getLogger("Gustelfy")
 try:
-    logger.setLevel(settings.get_config("SCRIPT","loglevel"))
+    logger.setLevel(settings.get_loglevel())
 except:
     logger.setLevel(logging.DEBUG)
 
@@ -24,6 +24,7 @@ app = flask.Flask(__name__, root_path=settings.folders["root"], template_folder=
 
 @app.before_first_request
 def before_first_request():
+    logger.info("Initializing database.")
     db_con = database.Database()
     db_con.ensure_default_tables()
     # spotify api connection
@@ -42,8 +43,9 @@ def index():
     #print(track.get_artists())
     #print(track.get_artists()[0].get_genres())
     user_session = session.Session(spotify, db_con)
-
+    user_session.update_library()
     data = user_session.get_homepage_data()
+    user_session.commit_library_changes(data["changes"])
     
     
 
