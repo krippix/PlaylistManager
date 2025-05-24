@@ -1,6 +1,7 @@
-import logging, sqlite3
+import logging
 from util import config
-import database
+import util.database as database
+import download
 import spotipy
 
 def main():
@@ -10,12 +11,24 @@ def main():
 
     # Database init
     db_con = database.Database(settings)
-    db_con.test()
-    exit()
-
-    # Authorize Application and user with Spotify
+    
+    # fetch credentials from config.ini
+    missing_credentials = False
     client_id = settings.get_config("AUTH","client_id")
     client_secret = settings.get_config("AUTH","client_secret")
+    
+    if len(client_id) == 0:
+        logging.critical("No client id has been provided, please add one to data/config.ini")
+        missing_credentials = True
+    if len(client_secret) == 0:
+        logging.critical("No client secret has been provided, please add one to data/config.ini")
+        missing_credentials = True
+    
+    if missing_credentials:
+        logging.info("Exiting software.")
+        exit()
+    
+    # Authorize Application and user with Spotify
     scopes = [
         "user-library-read",
         "user-library-modify",
@@ -41,14 +54,13 @@ def main():
     connection = spotipy.Spotify(auth_manager=auth_manager)
 
     # Test Print user tracks
-    print(connection.current_user())
+    #print(connection.current_user())
     #print(connection.user())
-    '''
-    results = connection.current_user_saved_tracks()
-    for idx, item in enumerate(results['items']):
-        track = item['track']
-        print(idx, track['artists'][0]['name'], " – ", track['name'])
-    '''
+    
+    list = download.fetch_library(connection)
+    print(list[0])
+    
+    
 
 if __name__ == "__main__":
     main()
