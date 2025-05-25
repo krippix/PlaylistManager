@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["version"]
+name = "PlaylistManager"
+requires-python = ">= 3.12"
+dependencies = [
+    "spotipy >= 2.19.0",
+    "uvicorn >= 0.22.0",
+    "fastapi >= 0.95.1",
+    "sqlalchemy == 2.0.*",
+]
+description = "Small python script for managing Spotify playlists"
+readme = "README.md"
+
+[project.urls]
+Repository = "https://github.com/krippix/PlaylistManager.git"
+Issues = "https://github.com/krippix/PlaylistManager/issues"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.11",
+]
