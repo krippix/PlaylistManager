@@ -1,11 +1,9 @@
-# GustelifyPlaylistMgr
+# PlaylistManager
 
 ## Setup
 
 API KEY can be found here:
 <https://developer.spotify.com/dashboard/>
-
-`python -m Gustelfy`
 
 ## Goal
 
@@ -31,3 +29,13 @@ The follwing data will be saved in the database
 - playlists
 - tracks
 - users
+
+## Development
+
+Local setup:
+
+```shell
+uv venv
+source .venv/bin/activate
+uv sync --dev
+```
