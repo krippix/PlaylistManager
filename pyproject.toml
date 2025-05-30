@@ -4,15 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 dynamic = ["version"]
-name = "PlaylistManager"
+name = "django_playlist_manager"
 requires-python = ">= 3.12"
 dependencies = [
+    "django>=5.2.1",
     "spotipy >= 2.19.0",
-    "uvicorn >= 0.22.0",
-    "fastapi >= 0.95.1",
-    "sqlalchemy == 2.0.*",
 ]
-description = "Small python script for managing Spotify playlists"
+description = "Django app for managing spotify playlists."
 readme = "README.md"
 
 [project.urls]
@@ -22,4 +20,23 @@ Issues = "https://github.com/krippix/PlaylistManager/issues"
 [dependency-groups]
 dev = [
     "ruff>=0.11.11",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
 ]
