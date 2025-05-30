@@ -1,0 +1,2 @@
+recursive-include django_playlist_manager/static *
+recursive-include django_playlist_manager/templates *

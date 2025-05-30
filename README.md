@@ -1,5 +1,26 @@
 # PlaylistManager
 
+## Installation
+
+In order to use this in a django project, install it there via pip.
+Then place in in settings.py
+
+```python
+INSTALLED_APPS = [
+  'django_playlist_manager.apps.PlaylistManagerConfig',
+  ...
+]
+```
+
+Additionally add it to the urls.py
+
+```python
+urlpatterns = [
+    path("playlists/", include("django_playlist_manager.urls")),
+    ...
+]
+```
+
 ## Setup
 
 API KEY can be found here:
@@ -38,4 +59,9 @@ Local setup:
 uv venv
 source .venv/bin/activate
 uv sync --dev
+```
+
+Build the package
+```sh
+
 ```

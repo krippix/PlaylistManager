@@ -19,6 +19,7 @@ Issues = "https://github.com/krippix/PlaylistManager/issues"
 
 [dependency-groups]
 dev = [
+    "build>=1.2.2.post1",
     "ruff>=0.11.11",
 ]
 
