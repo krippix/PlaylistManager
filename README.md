@@ -26,6 +26,14 @@ urlpatterns = [
 API KEY can be found here:
 <https://developer.spotify.com/dashboard/>
 
+The following environment variables have to be set:
+
+| variable               | description |
+|------------------------|-------------|
+| `SPOTIPY_REDIRECT_URI` | Must match the redirect URI added to your application in your Dashboard |
+|   |   |
+|   |   |
+
 ## Goal
 
 This is an attempt at automatically sorting my Spotify music using the follwing scheme:
