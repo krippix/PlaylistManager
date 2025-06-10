@@ -1,4 +1,5 @@
 import spotipy
+from django.db import models
 
 from .models import SpotifyCredentials
 
@@ -8,8 +9,11 @@ class UserCache(spotipy.CacheHandler):
         self.user_id = user_id
 
     def get_cached_token(self):
-        #SpotifyCredentials.
-        pass
+        try:
+            token = SpotifyCredentials.objects.get(django_user=self.user_id)
+        except models.Model.DoesNotExist:
+            return None
+        return token
 
     def save_token_to_cache(self, token_info):
         pass
