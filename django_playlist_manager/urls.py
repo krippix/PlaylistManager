@@ -21,4 +21,6 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('auth/callback', views.auth_callback, name="auth"),
+    path('playlists', views.playlists, name="playlists"),
 ]

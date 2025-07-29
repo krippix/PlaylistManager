@@ -1,0 +1,31 @@
+<h1>Hallogus</h1>
+<p>{{ spotify_auth_url }}</p>
+
+{% if spotify_auth_url %}
+<p>You are not authenticated with Spotify.</p>
+
+<button type="button" onclick="window.location='{{ spotify_auth_url }}';">Authorize Spotify Access</button> 
+{% else %}
+<div id="spotify_user">
+    <table>
+        <tr>
+            <td>Name</td>
+            <td><a href={{ user_url }}>{{ display_name }}</a></td>
+        </tr>
+        <tr>
+            <td>Followers</td>
+            <td>{{ followers }}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+        </tr>
+    </table>
+</div>
+<p>{{ user_info }}</p>
+
+{% endif %}

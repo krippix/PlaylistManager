@@ -1,0 +1,28 @@
+<style>
+.playlist_row {
+    
+}
+
+.playlist_row img {
+  object-fit: cover;
+  width: 100px;
+  height: 100px;
+}
+</style>
+
+<h1>Playlists</h1>
+
+<div id="playlists">
+<table>
+{% for playlist in playlists %}
+<tr class="playlist_row">
+    <td><img src="{{ playlist.image_url }}"></td>
+    <td>{{ playlist.name }}</td>
+    <td><a href="{{ playlist.url }}">link</a></td>
+</tr>
+
+{% endfor %}
+</table>
+</div>
+
+<p>{{ test }}</p>

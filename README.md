@@ -28,11 +28,11 @@ API KEY can be found here:
 
 The following environment variables have to be set:
 
-| variable               | description |
-|------------------------|-------------|
-| `SPOTIPY_REDIRECT_URI` | Must match the redirect URI added to your application in your Dashboard |
-|   |   |
-|   |   |
+| variable                | description                                                             |
+|-------------------------|-------------------------------------------------------------------------|
+| `SPOTIPY_REDIRECT_URI`  | Must match the redirect URI added to your application in your Dashboard |
+| `SPOTIPY_CLIENT_SECRET` | As seen in the Spotify developer portal                                 |
+| `SPOTIPY_CLIENT_ID`     | As seen in the Spotify developer portal                                 |
 
 ## Goal
 
