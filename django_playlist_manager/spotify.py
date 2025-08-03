@@ -39,3 +39,119 @@ def get_auth_obj(user_id: int) -> spotipy.SpotifyOAuth:
         open_browser=False,
     )
     return auth_obj
+
+
+def fetch_all_saved_tracks(sp: spotipy.Spotify) -> list[str]:
+    limit = 50
+    current_page: dict | None = sp.current_user_saved_tracks(limit=limit, offset=0)
+
+    if not current_page:
+        return []
+
+    total = current_page.get("total", 0)
+
+    result = [x["track"]["id"] for x in current_page["items"]]
+
+    for i, _ in enumerate(range(total // limit)):
+        offset = i * limit + limit
+        current_page = sp.current_user_saved_tracks(limit=limit, offset=offset)
+
+        if current_page is None:
+            continue
+
+        result += [x["track"]["id"] for x in current_page["items"]]
+
+    return result
+
+
+def fetch_all_user_playlists(sp: spotipy.Spotify) -> list[dict]:
+    limit = 50
+    current_page: dict | None = sp.current_user_playlists(limit=limit, offset=0)
+
+    user = sp.current_user()
+    if user is None:
+        raise Exception("Spotify user has no id.")
+
+    user_id = user["id"]
+
+    if not current_page:
+        return []
+
+    total = current_page.get("total", 0)
+
+    playlists = [x for x in current_page["items"] if x["owner"]["id"] == user_id]
+
+    for i, _ in enumerate(range(total // limit)):
+        offset = i * limit + limit
+        current_page = sp.current_user_playlists(limit=limit, offset=offset)
+
+        if current_page is None:
+            continue
+
+        playlists += [x for x in current_page["items"] if x["owner"]["id"] == user_id]
+
+    return playlists
+
+
+def fetch_all_playlist_tracks(sp: spotipy.Spotify, playlist_id: str) -> list[dict]:
+    """_summary_
+
+    :param sp: _description_
+    :param playlist_id: _description_
+    :return: _description_
+
+    ## Example item:
+    ```
+    {
+        "album": {},
+        "artists": [],
+        "available_markets": [],
+        "disc_number": 0,
+        "duration_ms": 0,
+        "explicit": false,
+        "external_ids": {
+            "isrc": "string",
+            "ean": "string",
+            "upc": "string"
+        },
+        "external_urls": {
+            "spotify": "string"
+        },
+        "href": "string",
+        "id": "string",
+        "is_playable": false,
+        "linked_from": {},
+        "restrictions": {
+            "reason": "string"
+        },
+        "name": "string",
+        "popularity": 0,
+        "preview_url": "string",
+        "track_number": 0,
+        "type": "track",
+        "uri": "string",
+        "is_local": false
+    }
+    ```
+    """
+    limit = 100
+    current_page: dict | None = sp.playlist_items(playlist_id=playlist_id, limit=limit, additional_types=["track"])
+
+    if current_page is None:
+        return []
+
+    total = current_page["total"]
+
+    tracks = [x['track'] for x in current_page["items"]]
+    for i, _ in enumerate(range(total // limit)):
+        offset = i * limit + limit
+        current_page = sp.playlist_items(
+            playlist_id=playlist_id, limit=limit, offset=offset, additional_types=["track"]
+        )
+
+        if current_page is None:
+            continue
+
+        tracks += [x['track'] for x in current_page["items"]]
+
+    return tracks
