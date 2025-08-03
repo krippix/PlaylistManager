@@ -8,21 +8,30 @@
   width: 100px;
   height: 100px;
 }
+
+.red_text {
+  color: red;
+}
 </style>
 
 <h1>Playlists</h1>
 
 <div id="playlists">
-<table>
-{% for playlist in playlists %}
-<tr class="playlist_row">
-    <td><img src="{{ playlist.image_url }}"></td>
-    <td>{{ playlist.name }}</td>
-    <td><a href="{{ playlist.url }}">link</a></td>
-</tr>
 
+{% for playlist in playlists %}
+<div class="playlist_row">
+  <img src="{{ playlist.image_url }}">
+  <p>{{ playlist.name }}</p>
+  <a href="{{ playlist.url }}">link</a>
+  <table>
+    {% for track in playlist.tracks %}
+    <tr {% if not track.liked %}class="red_text"{% endif %}>
+      <td>{{ track.name }}</td>
+      <td>{{ track.uri }}</td>
+    </tr>
+    {% endfor %}
+  </table>
 {% endfor %}
-</table>
 </div>
 
 <p>{{ test }}</p>

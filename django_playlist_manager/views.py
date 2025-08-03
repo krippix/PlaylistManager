@@ -50,18 +50,27 @@ def index(request: HttpRequest) -> HttpResponse:
 @spotify_auth
 def playlists(request: HttpRequest, *args, **kwargs):
     sp: spotipy.Spotify = kwargs['sp']
-    fetched_playlists = sp.current_user_playlists()
+    fetched_playlists = djotify.fetch_all_user_playlists(sp)
 
-    playlists = []
-    for playlist in fetched_playlists['items']:
-        if playlist['owner']['id'] != sp.current_user()['id']:
-            continue
+    playlists: list[dict] = []
+
+    # get all liked songs
+    songs = set(djotify.fetch_all_saved_tracks(sp))
+
+    for playlist in fetched_playlists:
         playlists.append({
             "name": playlist['name'],
+            "id": playlist['id'],
             "image_url": playlist['images'][0]['url'] if playlist.get('images') else "",
             "url": playlist['external_urls']['spotify'],
+            "tracks": djotify.fetch_all_playlist_tracks(sp, playlist['id']),
         })
-    print(len(playlists))
+
+    # add liked status to each track in each playlist
+    for playlist in playlists:
+        for track in playlist['tracks']:
+            track['liked'] = track['id'] in songs
+
     page_data = {
         "playlists": playlists,
     }
